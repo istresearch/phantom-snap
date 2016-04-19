@@ -14,7 +14,7 @@ class TestPhantomJS(TestCase):
 if __name__ == '__main__':
 
         config = {
-            'executable': '/Users/andrew.carter/data/temp/phantomjs/phantomjs-2.1.1-macosx/bin/phantomjs',
+            'executable': '/usr/local/bin/phantomjs',
             'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
             'env': {'TZ': 'America/Los_Angeles'}
         }

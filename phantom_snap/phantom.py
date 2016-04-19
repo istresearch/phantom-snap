@@ -26,10 +26,10 @@ class PhantomJSRenderer(renderer.Renderer):
         self._comms_lock = TimedRLock()
 
         if not os.path.isfile(self.config['executable']):
-            raise renderer.RenderError(''.join(["Can't locate PhantomJS:", self.config['executable']]))
+            raise renderer.RenderError(''.join(["Can't locate PhantomJS executable: ", self.config['executable']]))
 
         if not os.path.isfile(self.config['script']):
-            raise renderer.RenderError(''.join(["Can't locate script:", self.config['script']]))
+            raise renderer.RenderError(''.join(["Can't locate script: ", self.config['script']]))
 
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
                headers=None, cookies=None):

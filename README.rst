@@ -22,6 +22,7 @@ The example assumes you have PhantomJS installed and on on your path.
     from phantom_snap.phantom import PhantomJSRenderer
     
     config = {
+        'executable': '/usr/local/bin/phantomjs',
         'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
         'env': {'TZ': 'America/Los_Angeles'}
     }
