@@ -17,6 +17,7 @@ from threadtools import TimedRLock
 
 
 class PhantomJSRenderer(renderer.Renderer):
+
     def __init__(self, config):
 
         self.config = copy.deepcopy(PHANTOMJS)
@@ -25,7 +26,7 @@ class PhantomJSRenderer(renderer.Renderer):
         self._proc = None
         self._comms_lock = TimedRLock()
 
-        if not os.path.isfile(self.config['executable']):
+        if not self._which(self.config['executable']):
             raise renderer.RenderError(''.join(["Can't locate PhantomJS executable: ", self.config['executable']]))
 
         if not os.path.isfile(self.config['script']):
@@ -116,9 +117,6 @@ class PhantomJSRenderer(renderer.Renderer):
                 print 'Unexpected error, terminating PhantomJS: ' + str(e)
                 self.shutdown()
 
-    def _construct_command(self):
-        return [self.config['executable']] + self.config['args'] + [self.config['script']]
-
     def shutdown(self, timeout=None):
 
         # Attempt to acquire the communications lock while we shutdown the
@@ -156,3 +154,30 @@ class PhantomJSRenderer(renderer.Renderer):
             proc = self._proc
             self._proc = None
             proc.kill()
+
+    def _construct_command(self):
+        """Build the command array for executing the PhantomJS process."""
+
+        executable = self._which(self.config['executable'])
+
+        return [executable] + self.config['args'] + [self.config['script']]
+
+    @staticmethod
+    def _which(program):
+        """Locate the executable on the path if required."""
+
+        def is_exe(fpath):
+            return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+        fpath, fname = os.path.split(program)
+        if fpath:
+            if is_exe(program):
+                return program
+        else:
+            for path in os.environ["PATH"].split(os.pathsep):
+                path = path.strip('"')
+                exe_file = os.path.join(path, program)
+                if is_exe(exe_file):
+                    return exe_file
+
+        return None

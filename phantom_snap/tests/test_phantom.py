@@ -14,7 +14,7 @@ class TestPhantomJS(TestCase):
 if __name__ == '__main__':
 
         config = {
-            'executable': '/usr/local/bin/phantomjs',
+            'executable': 'phantomjs',
             'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
             'env': {'TZ': 'America/Los_Angeles'}
         }

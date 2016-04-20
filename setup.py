@@ -27,11 +27,15 @@ setup(name='phantom-snap',
     packages=[
         'phantom_snap'
     ],
-    install_requires=[],
-    test_suite='nose.collector',
-    tests_require=[
-        'nose'
+    setup_requires=[
+        'nose>=1.0'
     ],
+    install_requires=[],
+    tests_require=[
+        'nose',
+        'coverage'
+    ],
+    test_suite='nose.collector',
     classifiers=[
         "Intended Audience :: Developers",
         "Topic :: System",
