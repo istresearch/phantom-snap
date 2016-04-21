@@ -28,12 +28,12 @@ setup(name='phantom-snap',
         'phantom_snap'
     ],
     setup_requires=[
-        'nose>=1.0'
+        'nose>=1.3.7'
     ],
     install_requires=[],
     tests_require=[
         'nose',
-        'coverage'
+        'coverage>=4.0.3'
     ],
     test_suite='nose.collector',
     classifiers=[
