@@ -27,6 +27,9 @@ setup(name='phantom-snap',
     packages=[
         'phantom_snap'
     ],
+    package_data={
+        'phantom_snap': ['*.js']
+    },
     setup_requires=[
         'nose>=1.3.7'
     ],
