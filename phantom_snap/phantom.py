@@ -9,8 +9,9 @@ import json
 import os
 import subprocess
 import traceback
-
 import renderer
+import logging
+
 from settings import PHANTOMJS
 from threadtools import TimedMethod
 from threadtools import TimedRLock
@@ -26,98 +27,130 @@ class PhantomJSRenderer(renderer.Renderer):
         self._proc = None
         self._comms_lock = TimedRLock()
 
-        if not self._which(self.config['executable']):
-            raise renderer.RenderError(''.join(["Can't locate PhantomJS executable: ", self.config['executable']]))
+        if not self._which(self.config[u'executable']):
+            raise renderer.RenderError(''.join([u"Can't locate PhantomJS executable: ", self.config[u'executable']]))
 
-        if not os.path.isfile(self.config['script']):
-            raise renderer.RenderError(''.join(["Can't locate script: ", self.config['script']]))
+        if not os.path.isfile(self.config[u'script']):
+            raise renderer.RenderError(''.join([u"Can't locate script: ", self.config[u'script']]))
 
-    def render(self, url, html=None, img_format='PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
+        self._logger = logging.getLogger(u'PhantomJSRenderer')
+
+    def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
                headers=None, cookies=None):
+        """
+        Render a URL target or HTML to an image file.
+        :param url:
+        :param html:
+        :param img_format:
+        :param width:
+        :param height:
+        :param page_load_timeout:
+        :param user_agent:
+        :param headers:
+        :param cookies:
+        :return:
+        """
 
-        request = {'url': url, 'width': width, 'height': height, 'format': img_format}
+        request = {u'url': url, u'width': width, u'height': height, u'format': img_format}
 
         if html is not None:
-            request['html'] = html
+            request[u'html'] = html
 
         if page_load_timeout is None:
-            page_load_timeout = self.config['timeouts']['page_load']
+            page_load_timeout = self.config[u'timeouts'][u'page_load']
 
         if user_agent is not None:
-            request['userAgent'] = user_agent
+            request[u'userAgent'] = user_agent
 
         if headers is not None:
-            request['headers'] = headers
+            request[u'headers'] = headers
 
         if cookies is not None:
-            request['cookies'] = cookies
+            request[u'cookies'] = cookies
 
-        request['timeout'] = page_load_timeout * 1000  # Convert seconds to ms
+        request[u'timeout'] = page_load_timeout * 1000  # Convert seconds to ms
 
         with self._comms_lock:
             try:
                 first_render = False
 
                 if self._proc is None:
-                    startup_timeout = self.config['timeouts']['process_startup']
+                    startup_timeout = self.config[u'timeouts'][u'process_startup']
 
                     command = self._construct_command()
-                    kwargs = {'shell': False,
-                              'stdin': subprocess.PIPE,
-                              'stdout': subprocess.PIPE,
-                              'stderr': subprocess.STDOUT,
-                              'env': self.config['env']
+                    kwargs = {u'shell': False,
+                              u'stdin': subprocess.PIPE,
+                              u'stdout': subprocess.PIPE,
+                              u'stderr': subprocess.STDOUT,
+                              u'env': self.config[u'env']
                               }
 
+                    self._logger.debug(u'Starting the PhantomJS process: ' + ' '.join(command))
                     self._proc = TimedMethod().call(startup_timeout, subprocess.Popen, (command,), kwargs, join=True)
 
                     first_render = True
 
-                self._proc.stdin.write(json.dumps(request) + '\n')
+                request_string = json.dumps(request);
+
+                self._logger.debug(u'Sending request: ' + request_string)
+                self._proc.stdin.write(request_string + '\n')
                 self._proc.stdin.flush()
 
-                render_timeout = self.config['timeouts']['render_response']
+                render_timeout = self.config[u'timeouts'][u'render_response']
 
                 if first_render:
-                    render_timeout = self.config['timeouts']['initial_render_response']
+                    render_timeout = self.config[u'timeouts'][u'initial_render_response']
 
                 response_string = TimedMethod().call(page_load_timeout + render_timeout, self._proc.stdout.readline)
 
-                response = {'url': url, 'status': None, 'load_time': None, 'base64': None, 'format': img_format, 'error': None}
+                response = {u'url': url, u'status': None, u'load_time': None, u'base64': None, u'format': img_format, u'error': None}
 
                 if response_string is None:
-                    response['status'] = 'fail'
-                    response['error'] = 'Render request has timed out.'
+                    response[u'status'] = u'fail'
+                    response[u'error'] = u'Render request has timed out.'
                 else:
                     try:
-                        phantom_reponse = json.loads(response_string)
+                        phantom_response = json.loads(response_string)
 
-                        if 'status' in phantom_reponse:
-                            response['status'] = phantom_reponse['status']
+                        if self._logger.isEnabledFor(logging.DEBUG):
+                            msg = {}
+                            msg.update(phantom_response)
+                            msg[u'base64'] = u'<omitted>'
+                            self._logger.debug(u'Received response: ' + json.dumps(msg))
+
+                        if u'status' in phantom_response:
+                            response[u'status'] = phantom_response[u'status']
                         else:
-                            response['status'] = 'fail'
+                            response[u'status'] = u'fail'
 
-                        if 'loadTime' in phantom_reponse:
-                            response['load_time'] = phantom_reponse['loadTime']
+                        if u'loadTime' in phantom_response:
+                            response[u'load_time'] = phantom_response[u'loadTime']
 
-                        if 'base64' in phantom_reponse:
-                            response['base64'] = phantom_reponse['base64']
+                        if u'base64' in phantom_response:
+                            response[u'base64'] = phantom_response[u'base64']
 
-                        if 'error' in phantom_reponse:
-                            response['error'] = phantom_reponse['error']
+                        if u'error' in phantom_response:
+                            response[u'error'] = phantom_response[u'error']
 
                     except Exception as e:
+                        self._logger.debug(u'Error parsing response, terminating PhantomJS.\n' + traceback.format_exc())
                         self.shutdown()
-                        response['status'] = 'fail'
-                        response['error'] = ''.join([str(e), '\nPhantomJS response: ', response_string])
+
+                        response[u'status'] = u'fail'
+                        response[u'error'] = ''.join([str(e), u'\nPhantomJS response: ', response_string])
 
                 return response
-            except Exception as e:
-                traceback.print_exc()
-                print 'Unexpected error, terminating PhantomJS: ' + str(e)
+
+            except Exception:
+                self._logger.error(u'Unexpected error, terminating PhantomJS.\n' + traceback.format_exc())
                 self.shutdown()
+                raise
 
     def shutdown(self, timeout=None):
+        """ Shutdown the PhantomJS process.
+        :param timeout:
+        :return:
+        """
 
         # Attempt to acquire the communications lock while we shutdown the
         # process cleanly.
@@ -140,7 +173,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     if code is None:
                         self._proc.kill()
                     else:
-                        print ''.join(['PhantomJS exit code ', str(code)])  # TODO Logging?
+                        self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
 
                     self._proc = None
             finally:
@@ -158,9 +191,9 @@ class PhantomJSRenderer(renderer.Renderer):
     def _construct_command(self):
         """Build the command array for executing the PhantomJS process."""
 
-        executable = self._which(self.config['executable'])
+        executable = self._which(self.config[u'executable'])
 
-        return [executable] + self.config['args'] + [self.config['script']]
+        return [executable] + self.config[u'args'] + [self.config[u'script']]
 
     @staticmethod
     def _which(program):
