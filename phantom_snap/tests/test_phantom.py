@@ -13,25 +13,29 @@ class TestPhantomJS(TestCase):
 
 if __name__ == '__main__':
 
-        config = {
-            'executable': 'phantomjs',
-            'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
-            'env': {'TZ': 'America/Los_Angeles'}
-        }
-        r = PhantomJSRenderer(config)
+    import logging
+    import sys
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
-        urls = ['http://whatismytimezone.com/',
-                'http://www.drudgereport.com',
-                'http://www.google.com']
+    config = {
+        'executable': '/usr/local/bin/phantomjs',
+        'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
+        'env': {'TZ': 'America/Los_Angeles'}
+    }
+    r = PhantomJSRenderer(config)
 
-        try:
-            for url in urls:
-                page = r.render(url)
+    urls = ['http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com']
 
-                if page is not None:
-                    if page['error'] is None:
-                        print ''.join([page['url'], ' ', str(page['status']), ' ', str(page['load_time'])])
-                    else:
-                        print ''.join([page['url'], ' ', str(page['status']), ' ', page['error']])
-        finally:
-            r.shutdown(15)
+    try:
+        for url in urls:
+            page = r.render(url)
+
+            if page is not None:
+                if page['error'] is None:
+                    print ''.join([page['url'], ' ', str(page['status']), ' ', str(page['load_time'])])
+                else:
+                    print ''.join([page['url'], ' ', str(page['status']), ' ', page['error']])
+    finally:
+        r.shutdown(15)
