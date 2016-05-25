@@ -12,6 +12,7 @@ import traceback
 import renderer
 import logging
 
+from signal import *
 from settings import PHANTOMJS
 from threadtools import TimedMethod
 from threadtools import TimedRLock
@@ -34,6 +35,9 @@ class PhantomJSRenderer(renderer.Renderer):
             raise renderer.RenderError(''.join([u"Can't locate script: ", self.config[u'script']]))
 
         self._logger = logging.getLogger(u'PhantomJSRenderer')
+
+        for sig in (SIGABRT, SIGINT, SIGTERM):
+            signal(sig, self._on_signal)
 
     def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
                headers=None, cookies=None):
@@ -171,7 +175,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     code = self._proc.poll()
 
                     if code is None:
-                        self._proc.kill()
+                        self._proc.terminate()
                     else:
                         self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
 
@@ -186,7 +190,14 @@ class PhantomJSRenderer(renderer.Renderer):
             # or we have a stuck PhantomJS process.
             proc = self._proc
             self._proc = None
-            proc.kill()
+
+            if proc is not None:
+                proc.kill()
+
+    def _on_signal(self, sig, frame):
+        """"""
+        self.shutdown(timeout=0)
+        os._exit(0)
 
     def _construct_command(self):
         """Build the command array for executing the PhantomJS process."""
