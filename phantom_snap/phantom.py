@@ -11,6 +11,7 @@ import subprocess
 import traceback
 import renderer
 import logging
+import threading
 
 from signal import *
 from settings import PHANTOMJS
@@ -36,8 +37,9 @@ class PhantomJSRenderer(renderer.Renderer):
 
         self._logger = logging.getLogger(u'PhantomJSRenderer')
 
-        for sig in (SIGABRT, SIGINT, SIGTERM):
-            signal(sig, self._on_signal)
+        if isinstance(threading.current_thread(), threading._MainThread):
+            for sig in (SIGABRT, SIGINT, SIGTERM):
+                signal(sig, self._on_signal)
 
     def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
                headers=None, cookies=None):
