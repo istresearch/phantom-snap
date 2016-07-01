@@ -28,6 +28,7 @@
  *   "url": String,
  *   "status": "success", "stopped" or "fail",
  *   "loadTime": Long of amount of time required to load the page,
+ *   "paintTime": Long of amount of time required to paint the page (render the image),
  *   "base64": String of base 64 encoded image,
  *   "format": String
  * }\n
@@ -43,6 +44,16 @@
 
 var system = require("system");
 var webpage = require("webpage");
+
+// Redirect console logging to stderr to protect the protocol on stdin/stdout
+console.log = function(msg) {
+    system.stderr.writeLine(msg);
+};
+
+// Redirect console logging to stderr to protect the protocol on stdin/stdout
+console.error = function(msg) {
+    system.stderr.writeLine(msg);
+};
 
 renderHtml = function (request) {
 
@@ -120,7 +131,16 @@ renderHtml = function (request) {
             };
 
             if(status === "success" || status === "stopped") {
-                response.base64 = page.renderBase64(format);
+                time = Date.now();
+                var base64 = page.renderBase64(format);
+
+                if(base64) {
+                    response.base64 = base64;
+                    response.paintTime = Date.now() - time;
+                }
+                else {
+                    response.status = 'fail';
+                }
             }
 
             page.close();

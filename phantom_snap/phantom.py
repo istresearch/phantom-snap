@@ -17,6 +17,12 @@ from signal import *
 from settings import PHANTOMJS
 from threadtools import TimedMethod
 from threadtools import TimedRLock
+from threadtools import Thread
+
+try:
+    from Queue import Queue, Empty
+except ImportError:
+    from queue import Queue, Empty  # python 3.x
 
 
 class PhantomJSRenderer(renderer.Renderer):
@@ -27,6 +33,7 @@ class PhantomJSRenderer(renderer.Renderer):
         self.config.update(config)
 
         self._proc = None
+        self._stderr_reader = None
         self._comms_lock = TimedRLock()
 
         if not self._which(self.config[u'executable']):
@@ -42,7 +49,7 @@ class PhantomJSRenderer(renderer.Renderer):
                 signal(sig, self._on_signal)
 
     def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None):
+               headers=None, cookies=None, html_encoding=u'utf-8'):
         """
         Render a URL target or HTML to an image file.
         :param url:
@@ -54,12 +61,17 @@ class PhantomJSRenderer(renderer.Renderer):
         :param user_agent:
         :param headers:
         :param cookies:
+        :param html_encoding:
         :return:
         """
 
         request = {u'url': url, u'width': width, u'height': height, u'format': img_format}
 
         if html is not None:
+            if not isinstance(html, unicode):
+                # Make an attempt
+                html = html.decode(html_encoding, errors='replace')
+
             request[u'html'] = html
 
         if page_load_timeout is None:
@@ -87,12 +99,13 @@ class PhantomJSRenderer(renderer.Renderer):
                     kwargs = {u'shell': False,
                               u'stdin': subprocess.PIPE,
                               u'stdout': subprocess.PIPE,
-                              u'stderr': subprocess.STDOUT,
+                              u'stderr': subprocess.PIPE,
                               u'env': self.config[u'env']
                               }
 
                     self._logger.debug(u'Starting the PhantomJS process: ' + ' '.join(command))
                     self._proc = TimedMethod().call(startup_timeout, subprocess.Popen, (command,), kwargs, join=True)
+                    self._stderr_reader = PipeReader(self._proc.stderr)
 
                     first_render = True
 
@@ -109,7 +122,18 @@ class PhantomJSRenderer(renderer.Renderer):
 
                 response_string = TimedMethod().call(page_load_timeout + render_timeout, self._proc.stdout.readline)
 
-                response = {u'url': url, u'status': None, u'load_time': None, u'base64': None, u'format': img_format, u'error': None}
+                err_messages = self._check_stderr()
+
+                if err_messages is not None and self._logger.isEnabledFor(logging.DEBUG):
+                    self._logger.debug(err_messages)
+
+                response = {u'url': url,
+                            u'status': None,
+                            u'load_time': None,
+                            u'paint_time': None,
+                            u'base64': None,
+                            u'format': img_format,
+                            u'error': None}
 
                 if response_string is None:
                     response[u'status'] = u'fail'
@@ -132,6 +156,9 @@ class PhantomJSRenderer(renderer.Renderer):
                         if u'loadTime' in phantom_response:
                             response[u'load_time'] = phantom_response[u'loadTime']
 
+                        if u'paintTime' in phantom_response:
+                            response[u'paint_time'] = phantom_response[u'paintTime']
+
                         if u'base64' in phantom_response:
                             response[u'base64'] = phantom_response[u'base64']
 
@@ -139,7 +166,8 @@ class PhantomJSRenderer(renderer.Renderer):
                             response[u'error'] = phantom_response[u'error']
 
                     except Exception as e:
-                        self._logger.debug(u'Error parsing response, terminating PhantomJS.\n' + traceback.format_exc())
+                        self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
+
                         self.shutdown()
 
                         response[u'status'] = u'fail'
@@ -196,6 +224,27 @@ class PhantomJSRenderer(renderer.Renderer):
             if proc is not None:
                 proc.kill()
 
+        stderr_reader = self._stderr_reader
+        self._stderr_reader = None
+
+        if stderr_reader is not None:
+            stderr_reader.shutdown()
+
+    def _check_stderr(self):
+        """Collect any input from the stderr pipe and return it."""
+
+        err = self._stderr_reader.get()
+        err_messages = []
+
+        while err is not None:
+            err_messages.append(err)
+            err = self._stderr_reader.get()
+
+        if len(err_messages) > 0:
+            return u'\n'.join(err_messages)
+        else:
+            return None
+
     def _on_signal(self, sig, frame):
         """"""
         self.shutdown(timeout=0)
@@ -227,3 +276,34 @@ class PhantomJSRenderer(renderer.Renderer):
                     return exe_file
 
         return None
+
+
+class PipeReader:
+
+    def __init__(self, pipe):
+
+        self._pipe = pipe
+        self._queue = Queue()
+
+        self._thread = Thread(target=self._enqueue_output,
+                              args=(self._pipe, self._queue))
+        self._thread.daemon = True
+        self._thread.start()
+
+    def _enqueue_output(self, pipe, queue):
+        for line in iter(pipe.readline, b''):
+            queue.put(line)
+        pipe.close()
+
+    def get(self):
+        try:
+            return self._queue.get_nowait()
+        except Empty:
+            pass
+        return None
+
+    def shutdown(self):
+
+        if self._thread is not None:
+            if self._thread.isAlive():
+                self._thread.terminate()
