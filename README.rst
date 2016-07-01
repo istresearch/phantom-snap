@@ -14,7 +14,7 @@ Features
 Examples
 --------
 
-The example assumes you have PhantomJS installed and on on your path.
+The example assumes you have `PhantomJS<http://phantomjs.org/>`_ installed.
 
 ::
 
