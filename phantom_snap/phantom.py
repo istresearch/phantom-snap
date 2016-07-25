@@ -15,7 +15,7 @@ import threading
 
 from signal import *
 from settings import PHANTOMJS
-from threadtools import TimedMethod
+from threadtools import TimedMethodThread as TimedMethod
 from threadtools import TimedRLock
 from threadtools import Thread
 

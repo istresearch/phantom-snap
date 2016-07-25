@@ -5,6 +5,25 @@ import inspect
 import threading
 import time
 import traceback
+import multiprocessing
+
+
+def timed_method(timeout, join=True, process=False):
+    """
+    Decorator function for wrapping with a timeout.
+    :param timeout: Time in seconds
+    :param join: You should.
+    :param process: The execute using a process instead of a thread.
+    :return:
+    """
+    def wrap(f):
+        def wrapped_f(*args):
+            if process:
+                return TimedMethodProcess().call(timeout, f, args, join=join, raise_timeout=False)
+            else:
+                return TimedMethodThread().call(timeout, f, args, join=join, raise_timeout=False)
+        return wrapped_f
+    return wrap
 
 
 class TimedRLock(object):
@@ -44,18 +63,27 @@ class TimedRLock(object):
         self.release()
 
 
-class TimedMethod(object):
-    """Provides a mechanism to use a timeout on a blocking function call."""
+class TimeoutException(Exception):
+    """
+    Thrown when the allotted time has passed and the target function has not
+    returned.
+    """
+    pass
+
+
+class TimedMethodThread(object):
+    """Provides a mechanism to use a timeout on a blocking function call by
+    executing the function is a separate thread or process."""
 
     def __init__(self):
         self._semaphore = threading.Semaphore()
         self._condition = threading.Condition(threading.RLock())
 
-    def call(self, timeout, method, args=None, kwargs=None, join=False):
+    def call(self, timeout, method, args=None, kwargs=None, join=True, raise_timeout=False):
 
         self._semaphore.acquire()
 
-        result = [None]
+        result = [TimeoutException()]
         t = Thread(target=self._threaded_method, args=(method, args, kwargs, result))
         t.setDaemon(True)
         t.start()
@@ -65,7 +93,7 @@ class TimedMethod(object):
 
             while current_time < start_time + timeout:
                 if self._semaphore.acquire(False):
-                    return result[0]
+                    break
                 else:
                     self._condition.wait(timeout - current_time + start_time)
                     current_time = time.time()
@@ -75,7 +103,13 @@ class TimedMethod(object):
             if join:
                 t.join()
 
-        return None
+        if result[0] is not None and isinstance(result[0], TimeoutException):
+            if raise_timeout:
+                raise result[0]
+            else:
+                return None
+        else:
+            return result[0]
 
     def _threaded_method(self, method, args, kwargs, result):
         try:
@@ -97,6 +131,68 @@ class TimedMethod(object):
             self._semaphore.release()
             with self._condition:
                 self._condition.notify()
+
+
+class TimedMethodProcess(object):
+    """Provides a mechanism to use a timeout on a blocking function call by
+    executing the function is a separate thread or process."""
+
+    def __init__(self):
+        self._semaphore = threading.Semaphore()
+        self._event = multiprocessing.Event()# threading.Condition(threading.RLock())
+
+    def call(self, timeout, method, args=None, kwargs=None, join=True, raise_timeout=False):
+
+        self._semaphore.acquire()
+
+        result = multiprocessing.Manager().list([TimeoutException()])
+        p = multiprocessing.Process(target=self._threaded_method, args=(method, args, kwargs, result))
+        p.start()
+
+        current_time = start_time = time.time()
+
+        while current_time < start_time + timeout:
+            if self._event.is_set():
+                break
+            else:
+                self._event.wait(timeout - current_time + start_time)
+                current_time = time.time()
+
+        if p.is_alive():
+            p.terminate()
+            if join:
+                p.join()
+
+        if result[0] is not None and isinstance(result[0], TimeoutException):
+            if raise_timeout:
+                raise result[0]
+            else:
+                return None
+        else:
+            return result[0]
+
+    def _threaded_method(self, method, args, kwargs, result):
+        try:
+            if args is None:
+                if kwargs is None:
+                    result[0] = method()
+                else:
+                    result[0] = method(**kwargs)
+            else:
+                if kwargs is None:
+                    result[0] = method(*args)
+                else:
+                    result[0] = method(*args, **kwargs)
+        except SystemExit:  # triggered by calling thread.terminate()
+            raise
+        except:  # exceptions that are unexpected
+            traceback.print_exc()
+        finally:
+            self._semaphore.release()
+            self._event.set()
+
+# Aliasing TimedMethod for backward compatibility.
+TimedMethod = TimedMethodThread
 
 
 # This Thread class comes from http://tomerfiliba.com/recipes/Thread2/
