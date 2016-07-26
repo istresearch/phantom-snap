@@ -88,20 +88,24 @@ class TimedMethodThread(object):
         t.setDaemon(True)
         t.start()
 
+        completed = False
+
         with self._condition:
             current_time = start_time = time.time()
 
             while current_time < start_time + timeout:
                 if self._semaphore.acquire(False):
+                    completed = True
                     break
                 else:
                     self._condition.wait(timeout - current_time + start_time)
                     current_time = time.time()
 
-        if t.isAlive():
+        if not completed and t.isAlive():
             t.terminate()
-            if join:
-                t.join()
+
+        if join:
+            t.join()
 
         if result[0] is not None and isinstance(result[0], TimeoutException):
             if raise_timeout:
@@ -138,30 +142,30 @@ class TimedMethodProcess(object):
     executing the function is a separate thread or process."""
 
     def __init__(self):
-        self._semaphore = threading.Semaphore()
         self._event = multiprocessing.Event()# threading.Condition(threading.RLock())
 
     def call(self, timeout, method, args=None, kwargs=None, join=True, raise_timeout=False):
-
-        self._semaphore.acquire()
 
         result = multiprocessing.Manager().list([TimeoutException()])
         p = multiprocessing.Process(target=self._threaded_method, args=(method, args, kwargs, result))
         p.start()
 
         current_time = start_time = time.time()
+        completed = False
 
         while current_time < start_time + timeout:
             if self._event.is_set():
+                completed = True
                 break
             else:
                 self._event.wait(timeout - current_time + start_time)
                 current_time = time.time()
 
-        if p.is_alive():
+        if not completed and p.is_alive():
             p.terminate()
-            if join:
-                p.join()
+
+        if join:
+            p.join()
 
         if result[0] is not None and isinstance(result[0], TimeoutException):
             if raise_timeout:
@@ -188,7 +192,6 @@ class TimedMethodProcess(object):
         except:  # exceptions that are unexpected
             traceback.print_exc()
         finally:
-            self._semaphore.release()
             self._event.set()
 
 # Aliasing TimedMethod for backward compatibility.
