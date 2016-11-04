@@ -1,7 +1,7 @@
 
 import os
 
-
+# Defaults for the PhantomJS Renderer
 PHANTOMJS = {
     'executable': 'phantomjs',
     'args': [],
@@ -13,4 +13,10 @@ PHANTOMJS = {
         'render_response': 5,  # Additional time after page load for PhantomJS to formulate and return response
         'process_startup': 10  # Max time for PhantomJS process to start before giving up
     }
+}
+
+# Defaults for the Lifetime decorator
+LIFETIME = {
+    'idle_shutdown_sec': 1800,  # 30 minutes, Shutdown PhantomJS if it's been idle this long
+    'max_lifetime_sec': 86400  # 24 hours, Restart PhantomJS every 24 hours
 }
