@@ -32,7 +32,7 @@ class TestPhantomJS(TestCase):
     def test_lifetime(self):
 
         mock_r = MockRenderer({})
-        mock_r.render = MagicMock()
+        mock_r.render = MagicMock(side_effect=['result'])
         mock_r.shutdown = MagicMock()
 
         r = Lifetime(mock_r)
@@ -40,7 +40,7 @@ class TestPhantomJS(TestCase):
         self.assertEqual(mock_r.render.call_count, 0)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        r.render(u'http://test')
+        self.assertEqual(r.render(u'http://test'), 'result')
 
         self.assertEqual(mock_r.render.call_count, 1)
         self.assertEqual(mock_r.shutdown.call_count, 0)

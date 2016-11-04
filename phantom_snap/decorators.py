@@ -57,7 +57,7 @@ class Lifetime(Renderer):
             if not self._running:
                 self._startup()
 
-            self._delegate.render(url, html, img_format, width, height, page_load_timeout, user_agent, headers, cookies)
+            return self._delegate.render(url, html, img_format, width, height, page_load_timeout, user_agent, headers, cookies)
 
     def _startup(self):
 
