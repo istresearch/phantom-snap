@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Render a web page to an image, using either a URL or raw HTML.
-#
-# Requires PhantomJS to be installed on the host: http://phantomjs.org/
 
 import copy
 import json
@@ -26,6 +23,11 @@ except ImportError:
 
 
 class PhantomJSRenderer(renderer.Renderer):
+    """
+    Render a web page to an image, using either a URL or raw HTML.
+
+    Requires PhantomJS to be installed on the host: http://phantomjs.org/
+    """
 
     def __init__(self, config):
 
@@ -47,6 +49,9 @@ class PhantomJSRenderer(renderer.Renderer):
         if isinstance(threading.current_thread(), threading._MainThread):
             for sig in (SIGABRT, SIGINT, SIGTERM):
                 signal(sig, self._on_signal)
+
+    def get_config(self):
+        return self.config
 
     def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
                headers=None, cookies=None, html_encoding=u'utf-8'):

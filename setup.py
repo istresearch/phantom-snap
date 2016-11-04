@@ -36,7 +36,8 @@ setup(name='phantom-snap',
     install_requires=[],
     tests_require=[
         'nose',
-        'coverage>=4.0.3'
+        'coverage>=4.0.3',
+        'mock==2.0.0'
     ],
     test_suite='nose.collector',
     classifiers=[

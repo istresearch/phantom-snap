@@ -8,9 +8,7 @@ from phantom_snap.phantom import PhantomJSRenderer
 
 class TestPhantomJS(TestCase):
 
-    def test_is_string(self):
-
-        pass
+    pass
 
 
 if __name__ == '__main__':
@@ -33,6 +31,9 @@ if __name__ == '__main__':
     try:
         for url in urls:
             page = r.render(url)
+
+            import json
+            print json.dumps(page, indent=4)
 
             if page is not None:
                 if page['error'] is None:
