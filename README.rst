@@ -60,7 +60,15 @@ A sample response from the ``render(url)`` method looks like this:
         "load_time": 342
     }
 
-If you plan on running a ``PhantomJSRenderer`` instance continually or for an extended period of time, it's recommended that you wrap the instance with a ``Lifetime`` decorator as shown below. The ``Lifetime`` decorator will transparently shutdown the underlying PhantomJS process when the renderer is idle or after a maximum lifetime to release any accumulated resources. This is important if PhantomJS is configured to use a memory-based browser cache to prevent the cache from growing too large. After the ``Lifetime`` decorator shuts down the Renderer due to idle time or max life, the next render request will automatically create a new PhantomJS process.
+
+Decorators
+----------
+
+**Lifetime**
+
+If you plan on running a ``PhantomJSRenderer`` instance for an extended period of time with high volume, it's recommended that you wrap the instance with a ``Lifetime`` decorator as shown below. 
+
+The ``Lifetime`` decorator will transparently shutdown the underlying PhantomJS process if the renderer is idle or after a maximum lifetime to release any accumulated resources. This is important if PhantomJS is configured to use a memory-based browser cache to prevent the cache from growing too large. After the ``Lifetime`` decorator shuts down the Renderer (due to idle time or maximum time) the next render request will automatically create a new PhantomJS process.
 
 ::
 
