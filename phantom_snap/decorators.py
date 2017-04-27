@@ -1,12 +1,12 @@
 
-import copy
-import logging
-import time
 import eventlet
 from eventlet.green import threading
 
-from renderer import Renderer
+import copy
+import logging
+import time
 
+from renderer import Renderer
 from settings import LIFETIME
 
 

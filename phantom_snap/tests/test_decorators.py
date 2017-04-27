@@ -1,7 +1,9 @@
 # coding=utf-8
 
+import eventlet
+import copy
+
 from unittest import TestCase
-import copy, eventlet
 from mock import MagicMock
 
 from phantom_snap.settings import PHANTOMJS
