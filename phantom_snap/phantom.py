@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+import eventlet
+from eventlet.green import subprocess
+from eventlet.green import threading
+from eventlet.timeout import Timeout
+from eventlet.queue import Queue, Empty
+
 import copy
 import json
 import os
@@ -11,12 +17,6 @@ import logging
 from signal import *
 from settings import PHANTOMJS
 from threadtools import TimedRLock
-
-import eventlet
-from eventlet.green import subprocess
-from eventlet.green import threading
-from eventlet.timeout import Timeout
-from eventlet.queue import Queue, Empty
 
 
 class PhantomJSRenderer(renderer.Renderer):
