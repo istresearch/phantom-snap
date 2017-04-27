@@ -23,14 +23,12 @@ if __name__ == '__main__':
         'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
         'env': {'TZ': 'America/Los_Angeles'},
         'timeouts': {
-            'initial_page_load': 15,
-            'page_load': 3,
-            'render_response': 2,
-            'process_startup': 10
+            'process_startup': 100
         },
         'idle_shutdown_sec': 10,
         'max_lifetime_sec': 5
     }
+
     r = PhantomJSRenderer(config)
     r = Lifetime(r)
 

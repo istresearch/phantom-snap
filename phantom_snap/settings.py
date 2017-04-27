@@ -1,5 +1,6 @@
 
 import os
+from copy import deepcopy
 
 # Defaults for the PhantomJS Renderer
 PHANTOMJS = {
@@ -20,3 +21,25 @@ LIFETIME = {
     'idle_shutdown_sec': 1800,  # 30 minutes, Shutdown PhantomJS if it's been idle this long
     'max_lifetime_sec': 86400  # 24 hours, Restart PhantomJS every 24 hours
 }
+
+
+def merge(a, b, path=None):
+    """
+    Recursively merges b int a, overwriting existing a values.
+    :param a: 
+    :type a: dict
+    :param b: 
+    :type b: dict
+    :param path: 
+    :return: a
+    """
+    if path is None: path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key], path + [str(key)])
+            else:
+                a[key] = deepcopy(b[key])
+        else:
+            a[key] = deepcopy(b[key])
+    return a

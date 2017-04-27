@@ -15,7 +15,7 @@ import renderer
 import logging
 
 from signal import *
-from settings import PHANTOMJS
+from settings import PHANTOMJS, merge
 from threadtools import TimedRLock
 
 
@@ -29,7 +29,7 @@ class PhantomJSRenderer(renderer.Renderer):
     def __init__(self, config):
 
         self.config = copy.deepcopy(PHANTOMJS)
-        self.config.update(config)
+        self.config = merge(self.config, config)
 
         self._proc = None
         self._stderr_reader = None
