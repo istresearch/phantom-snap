@@ -1,25 +1,22 @@
 #!/usr/bin/env python
 
-
 import copy
 import json
 import os
-import subprocess
 import traceback
+
 import renderer
 import logging
-import threading
 
 from signal import *
 from settings import PHANTOMJS
-from threadtools import TimedMethodThread as TimedMethod
 from threadtools import TimedRLock
-from threadtools import Thread
 
-try:
-    from Queue import Queue, Empty
-except ImportError:
-    from queue import Queue, Empty  # python 3.x
+import eventlet
+from eventlet.green import subprocess
+from eventlet.green import threading
+from eventlet.timeout import Timeout
+from eventlet.queue import Queue, Empty
 
 
 class PhantomJSRenderer(renderer.Renderer):
@@ -79,9 +76,6 @@ class PhantomJSRenderer(renderer.Renderer):
 
             request[u'html'] = html
 
-        if page_load_timeout is None:
-            page_load_timeout = self.config[u'timeouts'][u'page_load']
-
         if user_agent is not None:
             request[u'userAgent'] = user_agent
 
@@ -91,8 +85,6 @@ class PhantomJSRenderer(renderer.Renderer):
         if cookies is not None:
             request[u'cookies'] = cookies
 
-        request[u'timeout'] = page_load_timeout * 1000  # Convert seconds to ms
-
         with self._comms_lock:
             try:
                 first_render = False
@@ -101,31 +93,43 @@ class PhantomJSRenderer(renderer.Renderer):
                     startup_timeout = self.config[u'timeouts'][u'process_startup']
 
                     command = self._construct_command()
-                    kwargs = {u'shell': False,
-                              u'stdin': subprocess.PIPE,
-                              u'stdout': subprocess.PIPE,
-                              u'stderr': subprocess.PIPE,
-                              u'env': self.config[u'env']
-                              }
 
-                    self._logger.debug(u'Starting the PhantomJS process: ' + ' '.join(command))
-                    self._proc = TimedMethod().call(startup_timeout, subprocess.Popen, (command,), kwargs, join=True)
-                    self._stderr_reader = PipeReader(self._proc.stderr)
+                    self._logger.info(u"Starting the PhantomJS process: " + u" ".join(command))
+
+                    with Timeout(startup_timeout):
+                        self._proc = subprocess.Popen(command,
+                                                      bufsize=4096,
+                                                      shell=False,
+                                                      stdin=subprocess.PIPE,
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      env=self.config[u'env'])
+
+                        self._stderr_reader = PipeReader(self._proc.stderr)
 
                     first_render = True
 
-                request_string = json.dumps(request);
+                render_timeout = self.config[u'timeouts'][u'render_response']
+
+                if page_load_timeout is None:
+                    if first_render:
+                        page_load_timeout = self.config[u'timeouts'][u'initial_page_load']
+                    else:
+                        page_load_timeout = self.config[u'timeouts'][u'page_load']
+
+                request[u'timeout'] = page_load_timeout * 1000  # Convert seconds to ms
+
+                request_string = json.dumps(request)
 
                 self._logger.debug(u'Sending request: ' + request_string)
                 self._proc.stdin.write(request_string + '\n')
                 self._proc.stdin.flush()
 
-                render_timeout = self.config[u'timeouts'][u'render_response']
-
-                if first_render:
-                    render_timeout = self.config[u'timeouts'][u'initial_render_response']
-
-                response_string = TimedMethod().call(page_load_timeout + render_timeout, self._proc.stdout.readline)
+                try:
+                    with Timeout(page_load_timeout + render_timeout):
+                        response_string = self._proc.stdout.readline()
+                except Timeout:
+                    response_string = None
 
                 err_messages = self._check_stderr()
 
@@ -170,7 +174,7 @@ class PhantomJSRenderer(renderer.Renderer):
                         if u'error' in phantom_response:
                             response[u'error'] = phantom_response[u'error']
 
-                    except Exception as e:
+                    except (ValueError, KeyError) as e:
                         self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
 
                         self.shutdown()
@@ -190,6 +194,8 @@ class PhantomJSRenderer(renderer.Renderer):
         :param timeout:
         :return:
         """
+        if self._stderr_reader is not None:
+            self._stderr_reader.shutdown()
 
         # Attempt to acquire the communications lock while we shutdown the
         # process cleanly.
@@ -203,7 +209,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     self._proc.stdin.flush()
 
                     # Wait for PhantomJS to exit
-                    TimedMethod().call(1, self._proc.wait)
+                    self._proc.wait(30)
                 except:
                     pass  # eat it
                 finally:
@@ -228,12 +234,6 @@ class PhantomJSRenderer(renderer.Renderer):
 
             if proc is not None:
                 proc.kill()
-
-        stderr_reader = self._stderr_reader
-        self._stderr_reader = None
-
-        if stderr_reader is not None:
-            stderr_reader.shutdown()
 
     def _check_stderr(self):
         """Collect any input from the stderr pipe and return it."""
@@ -290,15 +290,15 @@ class PipeReader:
         self._pipe = pipe
         self._queue = Queue()
 
-        self._thread = Thread(target=self._enqueue_output,
-                              args=(self._pipe, self._queue))
-        self._thread.daemon = True
-        self._thread.start()
+        _queue = self._queue
 
-    def _enqueue_output(self, pipe, queue):
-        for line in iter(pipe.readline, b''):
-            queue.put(line)
-        pipe.close()
+        def _enqueue_output():
+            for line in iter(pipe.readline, b''):
+                _queue.put(line)
+
+            pipe.close()
+
+        self._green_thread = eventlet.spawn(_enqueue_output)
 
     def get(self):
         try:
@@ -309,6 +309,5 @@ class PipeReader:
 
     def shutdown(self):
 
-        if self._thread is not None:
-            if self._thread.isAlive():
-                self._thread.terminate()
+        if self._green_thread is not None:
+            self._green_thread.kill()

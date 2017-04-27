@@ -1,12 +1,13 @@
 
 import copy
-from renderer import Renderer
 import logging
-import threading
 import time
+import eventlet
+from eventlet.green import threading
+
+from renderer import Renderer
 
 from settings import LIFETIME
-from threadtools import Thread
 
 
 class Lifetime(Renderer):
@@ -62,9 +63,7 @@ class Lifetime(Renderer):
     def _startup(self):
 
         self._running = True
-        self._thread = Thread(target=self._lifetime_monitor)
-        self._thread.daemon = True
-        self._thread.start()
+        self._thread = eventlet.spawn(self._lifetime_monitor)
 
     def shutdown(self, timeout=None):
 
@@ -76,13 +75,7 @@ class Lifetime(Renderer):
                 self._condition.notify()
 
         if self._thread is not None:
-            if self._thread.isAlive():
-                self._thread.join(timeout)
-
-            if self._thread.isAlive():
-                self._thread.terminate()
-
-            self._thread = None
+            self._thread.kill()
 
         self._delegate.shutdown(timeout)
 

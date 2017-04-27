@@ -28,6 +28,9 @@ The example assumes you have http://phantomjs.org/ installed.
         'executable': '/usr/local/bin/phantomjs',
         'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
         'env': {'TZ': 'America/Los_Angeles'}
+        'timeouts': {
+            'page_load': 3
+        }
     }
     r = PhantomJSRenderer(config)
 
@@ -46,7 +49,7 @@ The example assumes you have http://phantomjs.org/ installed.
     finally:
         r.shutdown(15)
 
-A sample response from the ``render(url)`` method looks like this:
+A sample response from ``r.render(url)`` looks like this:
 
 ::
 
