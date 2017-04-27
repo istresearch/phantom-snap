@@ -4,6 +4,7 @@ from unittest import TestCase
 
 from phantom_snap.settings import PHANTOMJS
 from phantom_snap.phantom import PhantomJSRenderer
+from phantom_snap.decorators import Lifetime
 
 
 class TestPhantomJS(TestCase):
@@ -20,19 +21,62 @@ if __name__ == '__main__':
     config = {
         'executable': '/usr/local/bin/phantomjs',
         'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
-        'env': {'TZ': 'America/Los_Angeles'}
+        'env': {'TZ': 'America/Los_Angeles'},
+        'timeouts': {
+            'initial_page_load': 15,
+            'page_load': 3,
+            'render_response': 2,
+            'process_startup': 10
+        },
+        'idle_shutdown_sec': 10,
+        'max_lifetime_sec': 5
     }
     r = PhantomJSRenderer(config)
+    r = Lifetime(r)
 
     urls = ['http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'sleep',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com'
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
+            'http://www.drudgereport.com',
+            'http://www.google.com',
+            'http://whatismytimezone.com/',
             'http://www.drudgereport.com',
             'http://www.google.com']
 
     try:
         for url in urls:
-            page = r.render(url)
+            if url == 'sleep':
+                import eventlet
+                eventlet.sleep(15)
+                continue
+
+            page = r.render(url, img_format='JPEG')
 
             import json
+            del page['base64']
             print json.dumps(page, indent=4)
 
             if page is not None:

@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from unittest import TestCase
-import copy, time
+import copy, eventlet
 from mock import MagicMock
 
 from phantom_snap.settings import PHANTOMJS
@@ -64,31 +64,31 @@ class TestPhantomJS(TestCase):
         self.assertEqual(mock_r.render.call_count, 0)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(0.25)
+        eventlet.sleep(0.25)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 1)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(.25)
+        eventlet.sleep(.25)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 2)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(.25)
+        eventlet.sleep(.25)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 3)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(.25)
+        eventlet.sleep(.25)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 4)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(.75)
+        eventlet.sleep(.75)
 
         self.assertEqual(mock_r.render.call_count, 4)
         self.assertEqual(mock_r.shutdown.call_count, 1)
@@ -118,19 +118,19 @@ class TestPhantomJS(TestCase):
         self.assertEqual(mock_r.render.call_count, 0)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(0.25)
+        eventlet.sleep(0.25)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 1)
         self.assertEqual(mock_r.shutdown.call_count, 0)
 
-        time.sleep(0.5)
+        eventlet.sleep(0.5)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 2)
         self.assertEqual(mock_r.shutdown.call_count, 1)
 
-        time.sleep(0.5)
+        eventlet.sleep(0.5)
         r.render(u'http://test')
 
         self.assertEqual(mock_r.render.call_count, 3)
