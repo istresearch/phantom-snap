@@ -35,7 +35,11 @@ if __name__ == '__main__':
     r = PhantomJSRenderer(config)
     r = Lifetime(r)
 
-    urls = [('http://www.some-domain.com', '<html><body>Boo ya!</body></html>')]
+    with open('/tmp/crawl.html', 'r') as content_file:
+        html = content_file.read()
+        html = html.decode('utf-8', errors='replace')
+
+    urls = [('http://www.some-domain.com', html)]
 
     try:
         for url in urls:
@@ -44,19 +48,14 @@ if __name__ == '__main__':
                 html = url[1]
                 url = url[0]
 
-            if url == 'sleep':
-                import eventlet
-                eventlet.sleep(15)
-                continue
             print "Requesting {}".format(url)
             page = r.render(url=url, html=html, img_format='PNG')
-
-            import json
-
             save_image('/tmp/render', page)
 
+            import json
             if page and 'base64' in page:
                 del page['base64']
+
             print json.dumps(page, indent=4)
 
             if page is not None:

@@ -71,9 +71,8 @@ class PhantomJSRenderer(renderer.Renderer):
         request = {u'url': url, u'width': width, u'height': height, u'format': img_format}
 
         if html is not None:
-            if not isinstance(html, unicode):
-                # Make an attempt
-                html = html.decode(html_encoding, errors='replace')
+            if isinstance(html, unicode):
+                html = html.encode(html_encoding, errors='replace')
 
             b64 = base64.b64encode(html)
             request[u'html64'] = b64
