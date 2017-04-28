@@ -11,13 +11,12 @@ import json
 import os
 import base64
 import traceback
-
+import time
 import renderer
 import logging
 
 from signal import *
 from settings import PHANTOMJS, merge
-from threadtools import TimedRLock
 
 
 class PhantomJSRenderer(renderer.Renderer):
@@ -34,7 +33,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
         self._proc = None
         self._stderr_reader = None
-        self._comms_lock = TimedRLock()
+        self._comms_lock = threading.RLock()
 
         if not self._which(self.config[u'executable']):
             raise renderer.RenderError(''.join([u"Can't locate PhantomJS executable: ", self.config[u'executable']]))
@@ -199,33 +198,38 @@ class PhantomJSRenderer(renderer.Renderer):
         :param timeout:
         :return:
         """
-        # Attempt to acquire the communications lock while we shutdown the
-        # process cleanly.
-        if self._comms_lock.acquire(True, timeout):
-            try:
-                if self._proc is None:
-                    return
+        try:
+            # Attempt to acquire the communications lock while we shutdown the
+            # process cleanly.
+            with Timeout(timeout):
 
-                try:
-                    self._proc.stdin.write('exit\n')
-                    self._proc.stdin.flush()
+                if timeout is not None:
+                    abort_at = time.time() + max(0, timeout)
+                else:
+                    abort_at = 0
 
-                    # Wait for PhantomJS to exit
-                    self._proc.wait(30)
-                except:
-                    pass  # eat it
-                finally:
-                    code = self._proc.poll()
+                with self._comms_lock:
+                    if self._proc is None:
+                        return
 
-                    if code is None:
-                        self._proc.terminate()
-                    else:
-                        self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
+                    try:
+                        self._proc.stdin.write('exit\n')
+                        self._proc.stdin.flush()
 
-                    self._proc = None
-            finally:
-                self._comms_lock.release()
-        else:
+                        # Wait for PhantomJS to exit
+                        self._proc.wait(max(1, abort_at - time.time()))
+                    except:
+                        pass  # eat it
+                    finally:
+                        code = self._proc.poll()
+
+                        if code is None:
+                            self._proc.terminate()
+                        else:
+                            self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
+
+                        self._proc = None
+        except Timeout:
             # Didn't get the comms lock within our timeout, so double-tap to
             # the head. The reason for this could be we either don't care
             # about a pending result (intentionally short timeout), the
