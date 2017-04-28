@@ -34,6 +34,7 @@ class PhantomJSRenderer(renderer.Renderer):
         self._proc = None
         self._stderr_reader = None
         self._comms_lock = threading.RLock()
+        self._shutdown_lock = threading.RLock()
 
         if not self._which(self.config[u'executable']):
             raise renderer.RenderError(''.join([u"Can't locate PhantomJS executable: ", self.config[u'executable']]))
@@ -199,38 +200,47 @@ class PhantomJSRenderer(renderer.Renderer):
         :return:
         """
         try:
-            # Attempt to acquire the communications lock while we shutdown the
-            # process cleanly.
-            with Timeout(timeout):
+            def _exit(timeout):
 
                 if timeout is not None:
                     abort_at = time.time() + max(0, timeout)
                 else:
                     abort_at = 0
 
-                #with self._comms_lock:
-                if self._proc is None:
-                    return
+                with self._shutdown_lock:
+                    if self._proc is None:
+                        return
 
-                try:
-                    self._proc.stdin.write('exit\n')
-                    self._proc.stdin.flush()
+                    try:
+                        self._proc.stdin.write('exit\n')
+                        self._proc.stdin.flush()
 
-                    # Wait for PhantomJS to exit
-                    self._proc.wait(max(1, abort_at - time.time()))
-                except:
-                    pass  # eat it
-                finally:
-                    code = self._proc.poll()
+                        # Wait for PhantomJS to exit
+                        if timeout is not None:
+                            self._proc.wait(max(0, abort_at - time.time()))
+                        else:
+                            self._proc.wait()
+                    except:
+                        pass  # eat it
+                    finally:
+                        code = self._proc.poll()
 
-                    if code is None:
-                        self._proc.kill()
-                    else:
-                        self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
+                        if code is None:
+                            self._logger.warn(u'Forcefully terminating PhantomJS.')
+                            self._proc.kill()
+                        else:
+                            self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
 
-                    self._proc = None
+                        self._proc = None
+
+            if timeout is not None:
+                with Timeout(timeout):
+                    _exit(timeout)
+            else:
+                _exit(timeout)
+
         except Timeout:
-            # Didn't get the comms lock within our timeout, so double-tap to
+            # Didn't get reach shtudown within our timeout, so double-tap to
             # the head. The reason for this could be we either don't care
             # about a pending result (intentionally short timeout), the
             # shutdown timeout was too short to receive a pending response,
@@ -239,7 +249,11 @@ class PhantomJSRenderer(renderer.Renderer):
             self._proc = None
 
             if proc is not None:
-                proc.kill()
+                try:
+                    self._logger.warn(u'Forcefully terminating PhantomJS.')
+                    proc.kill()
+                except:
+                    pass
 
         if self._stderr_reader is not None:
             self._stderr_reader.shutdown()
