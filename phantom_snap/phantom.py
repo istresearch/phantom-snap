@@ -208,27 +208,27 @@ class PhantomJSRenderer(renderer.Renderer):
                 else:
                     abort_at = 0
 
-                with self._comms_lock:
-                    if self._proc is None:
-                        return
+                #with self._comms_lock:
+                if self._proc is None:
+                    return
 
-                    try:
-                        self._proc.stdin.write('exit\n')
-                        self._proc.stdin.flush()
+                try:
+                    self._proc.stdin.write('exit\n')
+                    self._proc.stdin.flush()
 
-                        # Wait for PhantomJS to exit
-                        self._proc.wait(max(1, abort_at - time.time()))
-                    except:
-                        pass  # eat it
-                    finally:
-                        code = self._proc.poll()
+                    # Wait for PhantomJS to exit
+                    self._proc.wait(max(1, abort_at - time.time()))
+                except:
+                    pass  # eat it
+                finally:
+                    code = self._proc.poll()
 
-                        if code is None:
-                            self._proc.terminate()
-                        else:
-                            self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
+                    if code is None:
+                        self._proc.kill()
+                    else:
+                        self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
 
-                        self._proc = None
+                    self._proc = None
         except Timeout:
             # Didn't get the comms lock within our timeout, so double-tap to
             # the head. The reason for this could be we either don't care
