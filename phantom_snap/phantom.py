@@ -9,6 +9,7 @@ from eventlet.queue import Queue, Empty
 import copy
 import json
 import os
+import base64
 import traceback
 
 import renderer
@@ -74,7 +75,8 @@ class PhantomJSRenderer(renderer.Renderer):
                 # Make an attempt
                 html = html.decode(html_encoding, errors='replace')
 
-            request[u'html'] = html
+            b64 = base64.b64encode(html)
+            request[u'html64'] = b64
 
         if user_agent is not None:
             request[u'userAgent'] = user_agent
@@ -121,15 +123,19 @@ class PhantomJSRenderer(renderer.Renderer):
 
                 request_string = json.dumps(request)
 
-                self._logger.debug(u'Sending request: ' + request_string)
-                self._proc.stdin.write(request_string + '\n')
-                self._proc.stdin.flush()
-
                 try:
                     with Timeout(page_load_timeout + render_timeout):
+
+                        self._logger.debug(u'Sending request: ' + request_string)
+                        self._proc.stdin.write(request_string + '\n')
+                        self._proc.stdin.flush()
+
                         response_string = self._proc.stdout.readline()
+
                 except Timeout:
                     response_string = None
+                    self._logger.warn(u'Received no response, terminating PhantomJS.')
+                    self.shutdown()
 
                 err_messages = self._check_stderr()
 
@@ -172,7 +178,7 @@ class PhantomJSRenderer(renderer.Renderer):
                             response[u'base64'] = phantom_response[u'base64']
 
                         if u'error' in phantom_response:
-                            response[u'error'] = phantom_response[u'error']
+                            response[u'error'] = json.dumps(phantom_response[u'error'])
 
                     except (ValueError, KeyError) as e:
                         self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
@@ -184,7 +190,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
                 return response
 
-            except Exception:
+            except (Timeout, Exception):
                 self._logger.error(u'Unexpected error, terminating PhantomJS.\n' + traceback.format_exc())
                 self.shutdown()
                 raise

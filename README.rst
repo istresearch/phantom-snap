@@ -9,16 +9,20 @@ Features
 
 -  Provides full timing control around the rendering process.
 -  Maintains a live PhantomJS process (instead of a new one per request which many wrappers do, which is slow).
+-  Render content from a URL, or provide the HTML content directly to the renderer
 
 Roadmap
 -------
--  Decorators to manage rendering under specified timezones or proxies per request.
+-  Decorator to manage rendering under specified timezones
+-  Decorator to manage rendering under specified proxies.
 
 Examples
 --------
 
 The example assumes you have http://phantomjs.org/ installed.
 
+
+This first example demonstrates rendering a URL and saving the resulting image to a file at /tmp/google-render.jpg.
 ::
 
     from phantom_snap.settings import PHANTOMJS
@@ -34,18 +38,11 @@ The example assumes you have http://phantomjs.org/ installed.
     }
     r = PhantomJSRenderer(config)
 
-    urls = ['http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com']
+    url = 'http://www.google.com'
 
     try:
-        for url in urls:
-            page = r.render(url)
-            if page is not None:
-                if page['error'] is None:
-                    print ''.join([page['url'], ' ', str(page['status']), ' ', str(page['load_time'])])
-                else:
-                    print ''.join([page['url'], ' ', str(page['status']), ' ', page['error']])
+        page = r.render(url, img_format='JPEG')
+        save_image('/tmp/google-render', page)
     finally:
         r.shutdown(15)
 
@@ -62,6 +59,27 @@ A sample response from ``r.render(url)`` looks like this:
         "error": null,
         "load_time": 342
     }
+
+This example shows how to provide HTML content directly to the rendering process, instead of requesting it.
+::
+
+    from phantom_snap.settings import PHANTOMJS
+    from phantom_snap.phantom import PhantomJSRenderer
+
+    config = {
+        'executable': '/usr/local/bin/phantomjs',
+        'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true']
+    }
+    r = PhantomJSRenderer(config)
+
+    url = 'http://www.a-url.com'
+    html = '<html><body>Boo ya!</body></html>'
+
+    try:
+        page = r.render(url=url, html=html, img_format='PNG')
+        save_image('/tmp/html-render', page)
+    finally:
+        r.shutdown(15)
 
 
 Decorators
@@ -85,10 +103,22 @@ The ``Lifetime`` decorator will transparently shutdown the underlying PhantomJS 
         'env': {'TZ': 'America/Los_Angeles'},
 
         # Properties for the Lifetime decorator
-        'idle_shutdown_sec': 1800,  # 30 minutes, Shutdown PhantomJS if it's been idle this long
-        'max_lifetime_sec': 86400  # 24 hours, Restart PhantomJS every 24 hours
+        'idle_shutdown_sec': 900,  # 15 minutes, Shutdown PhantomJS if it's been idle this long
+        'max_lifetime_sec': 43200  # 12 hours, Restart PhantomJS every 12 hours
     }
 
     r = Lifetime(PhantomJSRenderer(config))
+
+    try:
+        urls = [] # Some endless source of URL targets
+
+        for url in urls:
+            page = r.render(url=url, img_format='JPEG')
+
+            # Store the image somewhere
+
+    finally:
+        r.shutdown()
+
 
 You can view the default configuration values in ``phantom_snap.settings.py``.

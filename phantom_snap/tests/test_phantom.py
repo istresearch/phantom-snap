@@ -1,4 +1,6 @@
 # coding=utf-8
+import random
+import string
 
 from unittest import TestCase
 
@@ -6,6 +8,7 @@ from phantom_snap.settings import PHANTOMJS
 from phantom_snap.phantom import PhantomJSRenderer
 from phantom_snap.decorators import Lifetime
 
+from phantom_snap.imagetools import save_image
 
 class TestPhantomJS(TestCase):
 
@@ -32,49 +35,28 @@ if __name__ == '__main__':
     r = PhantomJSRenderer(config)
     r = Lifetime(r)
 
-    urls = ['http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'sleep',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com'
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com',
-            'http://whatismytimezone.com/',
-            'http://www.drudgereport.com',
-            'http://www.google.com']
+    urls = [('http://www.some-domain.com', '<html><body>Boo ya!</body></html>')]
 
     try:
         for url in urls:
+            html = None
+            if isinstance(url, tuple):
+                html = url[1]
+                url = url[0]
+
             if url == 'sleep':
                 import eventlet
                 eventlet.sleep(15)
                 continue
-
-            page = r.render(url, img_format='JPEG')
+            print "Requesting {}".format(url)
+            page = r.render(url=url, html=html, img_format='PNG')
 
             import json
-            del page['base64']
+
+            save_image('/tmp/render', page)
+
+            if page and 'base64' in page:
+                del page['base64']
             print json.dumps(page, indent=4)
 
             if page is not None:

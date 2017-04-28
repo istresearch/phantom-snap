@@ -75,7 +75,10 @@ class Lifetime(Renderer):
                 self._condition.notify()
 
         if self._thread is not None:
-            self._thread.kill()
+            try:
+                self._thread.kill()
+            except Exception:
+                pass
 
         self._delegate.shutdown(timeout)
 

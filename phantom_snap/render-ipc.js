@@ -6,6 +6,7 @@
  * {
  *   "url": String, [required]
  *   "html": String, [optional]
+ *   "html64": Base64 encoded HTML String, [optional]
  *   "width": Integer, [optional]
  *   "height": Integer, [optional]
  *   "userAgent": String, [optional]
@@ -123,6 +124,14 @@ renderHtml = function (request) {
 
             time = Date.now() - time;
 
+            // PhantomJS will use black background for transparency in JPEG if not specified.
+            // https://github.com/ariya/phantomjs/issues/12724
+            if(format === 'JPEG') {
+                page.evaluate(function() {
+                    document.body.style.backgroundColor = 'white';
+                });
+            }
+
             var response = {
                 url: request.url,
                 loadTime: time,
@@ -156,6 +165,9 @@ renderHtml = function (request) {
 
     if(request.hasOwnProperty('html')) {
         page.setContent(request.html, request.url);
+    }
+    else if(request.hasOwnProperty('html64')) {
+        page.setContent(atob(request.html64), request.url);
     }
     else {
         page.open(request.url);
