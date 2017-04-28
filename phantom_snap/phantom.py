@@ -199,9 +199,6 @@ class PhantomJSRenderer(renderer.Renderer):
         :param timeout:
         :return:
         """
-        if self._stderr_reader is not None:
-            self._stderr_reader.shutdown()
-
         # Attempt to acquire the communications lock while we shutdown the
         # process cleanly.
         if self._comms_lock.acquire(True, timeout):
@@ -239,6 +236,9 @@ class PhantomJSRenderer(renderer.Renderer):
 
             if proc is not None:
                 proc.kill()
+
+        if self._stderr_reader is not None:
+            self._stderr_reader.shutdown()
 
     def _check_stderr(self):
         """Collect any input from the stderr pipe and return it."""
@@ -315,4 +315,7 @@ class PipeReader:
     def shutdown(self):
 
         if self._green_thread is not None:
-            self._green_thread.kill()
+            try:
+                self._green_thread.kill()
+            except:
+                pass

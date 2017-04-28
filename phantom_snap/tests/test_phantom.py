@@ -64,4 +64,4 @@ if __name__ == '__main__':
                 else:
                     print ''.join([page['url'], ' ', str(page['status']), ' ', page['error']])
     finally:
-        r.shutdown(15)
+        r.shutdown()
