@@ -26,7 +26,7 @@ class PhantomJSRenderer(renderer.Renderer):
     Requires PhantomJS to be installed on the host: http://phantomjs.org/
     """
 
-    def __init__(self, config):
+    def __init__(self, config, register_shutdown=False):
 
         self.config = copy.deepcopy(PHANTOMJS)
         self.config = merge(self.config, config)
@@ -43,7 +43,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
         self._logger = logging.getLogger(u'PhantomJSRenderer')
 
-        if isinstance(threading.current_thread(), threading._MainThread):
+        if register_shutdown and isinstance(threading.current_thread(), threading._MainThread):
             for sig in (SIGABRT, SIGINT, SIGTERM):
                 signal(sig, self._on_signal)
 
