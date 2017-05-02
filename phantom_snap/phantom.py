@@ -134,7 +134,7 @@ class PhantomJSRenderer(renderer.Renderer):
                 except Timeout:
                     response_string = None
                     self._logger.warn(u'Received no response, terminating PhantomJS.')
-                    self.shutdown()
+                    self.shutdown(0)
 
                 err_messages = self._check_stderr()
 
@@ -182,7 +182,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     except (ValueError, KeyError) as e:
                         self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
 
-                        self.shutdown()
+                        self.shutdown(0)
 
                         response[u'status'] = u'fail'
                         response[u'error'] = ''.join([str(e), u'\nPhantomJS response: ', response_string])
@@ -191,7 +191,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
             except (Timeout, Exception):
                 self._logger.error(u'Unexpected error, terminating PhantomJS.\n' + traceback.format_exc())
-                self.shutdown()
+                self.shutdown(0)
                 raise
 
     def shutdown(self, timeout=None):
@@ -233,14 +233,14 @@ class PhantomJSRenderer(renderer.Renderer):
 
                         self._proc = None
 
-            if timeout is not None:
+            if timeout is not None and timeout > 0:
                 with Timeout(timeout):
                     _exit(timeout)
             else:
                 _exit(timeout)
 
-        except Timeout:
-            # Didn't get reach shtudown within our timeout, so double-tap to
+        except (Timeout, Exception):
+            # Didn't get reach shutdown within our timeout, so double-tap to
             # the head. The reason for this could be we either don't care
             # about a pending result (intentionally short timeout), the
             # shutdown timeout was too short to receive a pending response,
