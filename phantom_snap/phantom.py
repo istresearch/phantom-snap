@@ -178,6 +178,8 @@ class PhantomJSRenderer(renderer.Renderer):
 
                         if u'error' in phantom_response:
                             response[u'error'] = json.dumps(phantom_response[u'error'])
+                        elif err_messages is not None:
+                            response[u'error'] = err_messages
 
                     except (ValueError, KeyError) as e:
                         self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
@@ -265,7 +267,7 @@ class PhantomJSRenderer(renderer.Renderer):
         err_messages = []
 
         while err is not None:
-            err_messages.append(err)
+            err_messages.append(err.decode('UTF-8', errors='replace'))
             err = self._stderr_reader.get()
 
         if len(err_messages) > 0:
