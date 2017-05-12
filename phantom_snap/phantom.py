@@ -233,7 +233,7 @@ class PhantomJSRenderer(renderer.Renderer):
                         else:
                             self._logger.info(''.join([u'PhantomJS exit code ', str(code)]))
 
-                        self._proc = None
+                        del self._proc
 
             if timeout is not None and timeout > 0:
                 with Timeout(timeout):
@@ -256,6 +256,8 @@ class PhantomJSRenderer(renderer.Renderer):
                     proc.kill()
                 except:
                     pass
+                finally:
+                    del proc
 
         if self._stderr_reader is not None:
             self._stderr_reader.shutdown()
