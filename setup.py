@@ -34,7 +34,7 @@ setup(name='phantom-snap',
         'nose>=1.3.7'
     ],
     install_requires=[
-        'eventlet'
+        'eventlet>=0.21.0'
     ],
     tests_require=[
         'nose',

@@ -25,7 +25,7 @@ LIFETIME = {
 
 def merge(a, b, path=None):
     """
-    Recursively merges b int a, overwriting existing a values.
+    Recursively merges b into a, overwriting existing a values.
     :param a: 
     :type a: dict
     :param b: 
