@@ -197,6 +197,25 @@ class PhantomJSRenderer(renderer.Renderer):
                 raise
 
     def shutdown(self, timeout=None):
+        """
+
+        :return:
+        """
+        with self._shutdown_lock:
+            if self._proc is None:
+                return
+
+            try:
+                self._proc.kill()
+            finally:
+                del self._proc
+
+            self._logger.info(u'PhantomJS terminated.')
+
+        if self._stderr_reader is not None:
+            self._stderr_reader.shutdown()
+
+    def shutdown_old(self, timeout=None):
         """ Shutdown the PhantomJS process.
         :param timeout:
         :return:
