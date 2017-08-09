@@ -90,7 +90,7 @@ class PhantomJSRenderer(renderer.Renderer):
             try:
                 first_render = False
 
-                if self._proc is None:
+                if not hasattr(self, '_proc') or self._proc is None:
                     startup_timeout = self.config[u'timeouts'][u'process_startup']
 
                     command = self._construct_command()
@@ -202,15 +202,13 @@ class PhantomJSRenderer(renderer.Renderer):
         :return:
         """
         with self._shutdown_lock:
-            if self._proc is None:
-                return
+            if hasattr(self, '_proc') and self._proc is not None:
+                try:
+                    self._proc.kill()
+                finally:
+                    del self._proc
 
-            try:
-                self._proc.kill()
-            finally:
-                del self._proc
-
-            self._logger.info(u'PhantomJS terminated.')
+                self._logger.info(u'PhantomJS terminated.')
 
         if self._stderr_reader is not None:
             self._stderr_reader.shutdown()
