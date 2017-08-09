@@ -205,6 +205,7 @@ class PhantomJSRenderer(renderer.Renderer):
             if hasattr(self, '_proc') and self._proc is not None:
                 try:
                     self._proc.kill()
+                    self._proc.poll()
                 finally:
                     del self._proc
 
