@@ -56,6 +56,24 @@ console.error = function(msg) {
     system.stderr.writeLine(msg);
 };
 
+// From https://stackoverflow.com/a/41713002, https://jsfiddle.net/47zwb41o/
+escape = function( s ){
+    var chr, hex, i = 0, l = s.length, out = '';
+    for( ; i < l; i ++ ){
+        chr = s.charAt( i );
+        if( chr.search( /[A-Za-z0-9\@\*\_\+\-\.\/]/ ) > -1 ){
+            out += chr; continue; }
+        hex = s.charCodeAt( i ).toString( 16 );
+        out += '%' + ( hex.length % 2 != 0 ? '0' : '' ) + hex;
+    }
+    return out;
+};
+
+b64ToUtf8 = function(s){
+	s = s.replace(/\s/g, '');
+	return decodeURIComponent(escape(atob(s)));
+};
+
 renderHtml = function (request) {
 
     var page = webpage.create();
@@ -167,7 +185,7 @@ renderHtml = function (request) {
         page.setContent(request.html, request.url);
     }
     else if(request.hasOwnProperty('html64')) {
-        page.setContent(atob(request.html64), request.url);
+        page.setContent(b64ToUtf8(request.html64), request.url);
     }
     else {
         page.open(request.url);
