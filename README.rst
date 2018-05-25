@@ -27,6 +27,7 @@ This first example demonstrates rendering a URL and saving the resulting image t
 
     from phantom_snap.settings import PHANTOMJS
     from phantom_snap.phantom import PhantomJSRenderer
+    from phantom_snap.imagetools import save_image
     
     config = {
         'executable': '/usr/local/bin/phantomjs',
@@ -65,6 +66,7 @@ This example shows how to provide HTML content directly to the rendering process
 
     from phantom_snap.settings import PHANTOMJS
     from phantom_snap.phantom import PhantomJSRenderer
+    from phantom_snap.imagetools import save_image
 
     config = {
         'executable': '/usr/local/bin/phantomjs',

@@ -26,7 +26,7 @@ class PhantomJSRenderer(renderer.Renderer):
     Requires PhantomJS to be installed on the host: http://phantomjs.org/
     """
 
-    def __init__(self, config, register_shutdown=False):
+    def __init__(self, config, logger=None, register_shutdown=False):
 
         self.config = copy.deepcopy(PHANTOMJS)
         self.config = merge(self.config, config)
@@ -42,7 +42,10 @@ class PhantomJSRenderer(renderer.Renderer):
         if not os.path.isfile(self.config[u'script']):
             raise renderer.RenderError(''.join([u"Can't locate script: ", self.config[u'script']]))
 
-        self._logger = logging.getLogger(u'PhantomJSRenderer')
+        if logger is not None:
+            self._logger = logger
+        else:
+            self._logger = logging.getLogger(u'PhantomJSRenderer')
 
         if register_shutdown and isinstance(threading.current_thread(), threading._MainThread):
             for sig in (SIGABRT, SIGINT, SIGTERM):
@@ -134,7 +137,7 @@ class PhantomJSRenderer(renderer.Renderer):
                 except Timeout:
                     response_string = None
                     self._logger.warn(u'Received no response, terminating PhantomJS.')
-                    self.shutdown(0)
+                    self.shutdown()
 
                 err_messages = self._check_stderr()
 
@@ -184,7 +187,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     except (ValueError, KeyError) as e:
                         self._logger.debug(u'Error parsing response: {}\nTerminating PhantomJS.\n{}'.format(response_string, traceback.format_exc()))
 
-                        self.shutdown(0)
+                        self.shutdown()
 
                         response[u'status'] = u'fail'
                         response[u'error'] = ''.join([str(e), u'\nPhantomJS response: ', response_string])
@@ -193,7 +196,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
             except (Timeout, Exception):
                 self._logger.error(u'Unexpected error, terminating PhantomJS.\n' + traceback.format_exc())
-                self.shutdown(0)
+                self.shutdown()
                 raise
 
     def shutdown(self, timeout=None):
@@ -231,7 +234,7 @@ class PhantomJSRenderer(renderer.Renderer):
 
     def _on_signal(self, sig, frame):
         """"""
-        self.shutdown(timeout=0)
+        self.shutdown()
         os._exit(0)
 
     def _construct_command(self):
