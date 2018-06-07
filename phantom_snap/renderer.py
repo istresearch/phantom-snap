@@ -14,7 +14,7 @@ class Renderer(object):
 
     @abc.abstractmethod
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None):
+               headers=None, cookies=None, html_encoding=u'utf-8'):
         raise NotImplementedError('Users must implement render() to use this base class')
 
     @abc.abstractmethod
