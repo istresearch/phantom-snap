@@ -1,0 +1,10 @@
+version: 2
+jobs:
+    build:
+        docker:
+            - image: circleci/python:2.7
+        steps:
+            - checkout
+            - run:
+                name: Phantom Echo
+                command: echo "Phantom Echo would be a great band name"
