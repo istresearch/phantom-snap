@@ -1,10 +1,62 @@
 version: 2
 jobs:
-    build:
-        docker:
-            - image: circleci/python:2.7
-        steps:
-            - checkout
-            - run:
-                name: Phantom Echo
-                command: echo "Phantom Echo would be a great band name"
+  build:
+    docker:
+      - image: circleci/python:2.7
+
+    steps:
+      - checkout
+      - run:
+          name: Install Phantom-Snap package
+          command: |
+            pip install virtualenv
+            virtualenv venv
+            . venv/bin/activate
+            python setup.py install
+
+      - run:
+          name: Run tests
+          command: |
+            . venv/bin/activate
+            python setup.py nosetests
+
+  deploy:
+    docker:
+      - image: circleci/python:2.7
+
+    steps:
+      - checkout
+      - run:
+          name: Create Phantom-Snap distribution
+          command: |
+            BRANCH=${CIRCLE_BRANCH#*/}
+
+            # if the release has a tag, create a source distribution
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              python setup.py sdist
+
+            # if the release has no tag, is on the develop branch, and is not part of a PR, tag it dev
+            elif [[ $BRANCH == develop ]] && [[ -z $CIRCLE_PULL_REQUEST ]]; then
+              python setup.py egg_info --tag-build=dev${CIRCLE_BUILD_NUM} sdist
+
+            # otherwise tag it ci
+            else
+              python setup.py egg_info --tag-build=ci${CIRCLE_BUILD_NUM} sdist
+            fi
+
+workflows:
+  version: 2
+  phantom_snap_workflow:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
