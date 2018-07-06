@@ -57,15 +57,7 @@ workflows:
   version: 2
   phantom_snap_workflow:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/
+      - build
       - deploy:
           requires:
             - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              only: /.*/
