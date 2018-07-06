@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Phantom-Snap package
+          name: Install package
           command: |
             pip install virtualenv
             virtualenv venv
@@ -27,7 +27,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Create Phantom-Snap distribution
+          name: Create distribution
           command: |
             BRANCH=${CIRCLE_BRANCH#*/}
 
@@ -43,6 +43,15 @@ jobs:
             else
               python setup.py egg_info --tag-build=ci${CIRCLE_BUILD_NUM} sdist
             fi
+
+      - run:
+          name: Huck distribution to repo
+          command: |
+            ssh-keyscan -H $REPO_HOST >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+
+            scp dist/*.tar.gz $SSH_USER@$REPO_HOST:/tmp/
+            ssh -t $SSH_USER@$REPO_HOST "cd /data/repo/pip/prod/ && ls /tmp/ | grep phantom | xargs -I '{}' sudo mv /tmp/'{}' . && sudo su ubuntu -c 'dir2pi -n .'"
 
 workflows:
   version: 2
