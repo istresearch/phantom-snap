@@ -1,0 +1,66 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:2.7
+
+    steps:
+      - checkout
+      - run:
+          name: Install package
+          command: |
+            pip install virtualenv
+            virtualenv venv
+            . venv/bin/activate
+            python setup.py install
+
+      - run:
+          name: Run tests
+          command: |
+            . venv/bin/activate
+            python setup.py nosetests
+
+  deploy:
+    docker:
+      - image: circleci/python:2.7
+
+    steps:
+      - checkout
+      - run:
+          name: Create distribution
+          command: |
+            BRANCH=${CIRCLE_BRANCH#*/}
+
+            # if the release has a tag, create a source distribution
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              python setup.py sdist
+            # if the release doesn't have a tag, it must be on dev - tag it as such
+            else
+              python setup.py egg_info --tag-build=dev${CIRCLE_BUILD_NUM} sdist
+            fi
+
+      - run:
+          name: Huck distribution to repo
+          command: |
+            ssh-keyscan -H $REPO_HOST >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+
+            scp dist/*.tar.gz $SSH_USER@$REPO_HOST:/tmp/
+            ssh -t $SSH_USER@$REPO_HOST "cd /data/repo/pip/prod/ && ls /tmp/ | grep phantom | xargs -I '{}' sudo mv /tmp/'{}' . && sudo su ubuntu -c 'dir2pi -n .'"
+
+workflows:
+  version: 2
+  phantom_snap_workflow:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              only: dev
