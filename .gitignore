@@ -64,3 +64,8 @@ target/
 # Intellij
 *.iml
 *.idea
+
+# Serverless
+.serverless
+node_modules
+package-lock.json

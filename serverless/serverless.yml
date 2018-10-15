@@ -1,0 +1,32 @@
+service: serverless-phantomjs
+
+provider:
+  name: aws
+  logRetentionInDays: 7
+  runtime: python2.7
+
+custom:
+  pythonRequirements:
+    dockerImage: lambci/lambda:build-python2.7
+    dockerizePip: true
+    pipCmdExtraArgs:
+      - --pre
+      - --no-cache
+
+plugins:
+  - serverless-python-requirements
+
+functions:
+  render:
+    handler: handler.render
+    events:
+      - http:
+          method: post
+          path: render
+
+package:
+  exclude:
+    - node_modules/**
+    - bin/**
+  include:
+    - bin/phantomjs-2.1.1
