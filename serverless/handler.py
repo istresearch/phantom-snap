@@ -3,8 +3,8 @@ from phantom_snap.lambda_schema import SCHEMA
 import base64
 import ujson
 import os
-# from flex.core import validate
-# from flex.exceptions import ValidationError
+from jsonschema import validate
+from jsonschema.exceptions import ValidationError
 import traceback
 
 
@@ -14,19 +14,19 @@ def render(event, context):
     schema_version = os.getenv('SCHEMA_VERSION', '1.0')
     schema_key = os.getenv('SCHEMA_KEY', 'render')
 
-    # try:
-    #     validate(SCHEMA[schema_version][schema_key],
-    #              request_data)
-    # except ValidationError as e:
-    #     return {
-    #         'isBase64Encoded': False,
-    #         'statusCode': 400,
-    #         'body': ujson.dumps({
-    #             'message': 'Failed Schema Validation',
-    #             'ex': traceback.format_exc(),
-    #          }),
-    #         'headers': {'Content-Type': 'application/json'}
-    #     }
+    try:
+        validate(request_data,
+                 SCHEMA[schema_version][schema_key])
+    except ValidationError as e:
+        return {
+            'isBase64Encoded': False,
+            'statusCode': 400,
+            'body': ujson.dumps({
+                'message': 'Failed Schema Validation',
+                'ex': traceback.format_exc(),
+             }),
+            'headers': {'Content-Type': 'application/json'}
+        }
 
     # load data from schema with defaults
     url = request_data['url']

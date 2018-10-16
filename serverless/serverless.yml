@@ -18,6 +18,8 @@ plugins:
 
 functions:
   render:
+    memorySize: 3008
+    timeout: 30
     handler: handler.render
     events:
       - http:

@@ -41,7 +41,7 @@ setup(name='phantom-snap',
         'nose',
         'coverage>=4.0.3',
         'mock==2.0.0',
-        'flex==6.13.2',
+        'jsonschema==2.6.0',
     ],
     test_suite='nose.collector',
     classifiers=[
