@@ -3,26 +3,30 @@ from phantom_snap.lambda_schema import SCHEMA
 import base64
 import ujson
 import os
-from flex.core import validate
-from flex.exceptions import ValidationError
+# from flex.core import validate
+# from flex.exceptions import ValidationError
 import traceback
 
 
 def render(event, context):
     request_data = ujson.loads(event['body'])
 
-    try:
-        validate(SCHEMA, request_data)
-    except ValidationError as e:
-        return {
-            'isBase64Encoded': False,
-            'statusCode': 400,
-            'body': ujson.dumps({
-                'message': 'Failed Schema Validation',
-                'ex': traceback.format_exc(),
-             }),
-            'headers': {'Content-Type': 'application/json'}
-        }
+    schema_version = os.getenv('SCHEMA_VERSION', '1.0')
+    schema_key = os.getenv('SCHEMA_KEY', 'render')
+
+    # try:
+    #     validate(SCHEMA[schema_version][schema_key],
+    #              request_data)
+    # except ValidationError as e:
+    #     return {
+    #         'isBase64Encoded': False,
+    #         'statusCode': 400,
+    #         'body': ujson.dumps({
+    #             'message': 'Failed Schema Validation',
+    #             'ex': traceback.format_exc(),
+    #          }),
+    #         'headers': {'Content-Type': 'application/json'}
+    #     }
 
     # load data from schema with defaults
     url = request_data['url']
@@ -34,7 +38,10 @@ def render(event, context):
     user_agent = request_data.get('user_agent', None)
     headers = request_data.get('headers', None)
     cookies = request_data.get('cookies', None)
-    html_encoding = request_data.get('html_encoding', None)
+    html_encoding = request_data.get('html_encoding', 'utf-8')
+
+    if html is not None:
+        html = base64.b64decode(html)
 
     # boot renderer up
     try:
@@ -90,9 +97,3 @@ def render(event, context):
             'body': ujson.dumps(page),
             'headers': {'Content-Type': 'application/json'}
         }
-
-if __name__ == "__main__":
-    data_to_send = {
-        'url': 'www.aol.com'
-    }
-    print(render({'body': ujson.dumps(data_to_send)}, {}))

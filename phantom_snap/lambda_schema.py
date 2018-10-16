@@ -46,19 +46,11 @@ SCHEMA = {
                 },
                 "headers": {
                     # default None
-                    "type": "object",
-                    "patternProperties": {
-                        "*": { "type": "string" },
-                    },
-                    "additionalProperties": False
+                    "type": "object"
                 },
                 "cookies": {
                     # default None
-                    "type": "object",
-                    "patternProperties": {
-                        "*": { "type": "string" },
-                    },
-                    "additionalProperties": False
+                    "type": "object"
                 },
                 "html_encoding": {
                     # default utf-8
