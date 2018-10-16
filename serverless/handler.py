@@ -1,57 +1,98 @@
-from phantom_snap.settings import PHANTOMJS
 from phantom_snap.phantom import PhantomJSRenderer
-from phantom_snap.imagetools import save_image
+from phantom_snap.lambda_schema import SCHEMA
 import base64
 import ujson
-
-# TODO: ENV VARS OR POST ARGS
-# # use when phantomjs is installed raw on the machine
-# PHANTOMJS_EXE = '/opt/phantomjs/default/bin/phantomjs'
-# # use via grunner in a container
-# #PHANTOMJS_EXE = '/usr/bin/phantomjs'
-# PHANTOMJS_ARGS = [
-#     '--disk-cache=false',
-#     '--load-images=true',
-#     '--ignore-ssl-errors=true',
-#     '--ssl-protocol=any'
-# ]
-# PHANTOMJS_TIME_ZONE = 'UTC'
-# PHANTOMJS_DEFAULT_USERAGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
-# PHANTOMJS_TIMEOUT_INITIAL = 15 # 15 Seconds, PhantomJS takes longer on the first render after startup
-# PHANTONJS_TIMEOUT_PAGE_LOAD = 5 # Max time given for PhantomJS to load the page before 'stop' and render
-# PHANTOMJS_TIMEOUT_RENDER_RESPONSE = 5 # Additional time after page load for PhantomJS to formulate and return response
-# PHANTOMJS_TIMEOUT_STARTUP = 10  # Max time for PhantomJS process to start before giving up
-# PHANTOMJS_LIFETIME_IDLE_SHUTDOWN_SEC = 300,  # Shutdown PhantomJS if it's been idle this long
-# PHANTOMJS_LIFETIME_MAX_LIFETIME_SEC = 1800  # Restart PhantomJS every N seconds
+import os
+from flex.core import validate
+from flex.exceptions import ValidationError
+import traceback
 
 
 def render(event, context):
     request_data = ujson.loads(event['body'])
-    html = base64.b64decode(request_data['html'])
+
+    try:
+        validate(SCHEMA, request_data)
+    except ValidationError as e:
+        return {
+            'isBase64Encoded': False,
+            'statusCode': 400,
+            'body': ujson.dumps({
+                'message': 'Failed Schema Validation',
+                'ex': traceback.format_exc(),
+             }),
+            'headers': {'Content-Type': 'application/json'}
+        }
+
+    # load data from schema with defaults
     url = request_data['url']
+    html = request_data.get('html', None)
+    img_format = request_data.get('image_format', 'PNG')
+    width = request_data.get('width', 1280)
+    height = request_data.get('height', 1024)
+    page_load_timeout = request_data.get('page_load_timeout', None)
+    user_agent = request_data.get('user_agent', None)
+    headers = request_data.get('headers', None)
+    cookies = request_data.get('cookies', None)
+    html_encoding = request_data.get('html_encoding', None)
 
-    renderer = PhantomJSRenderer({
-            u'executable': './bin/phantomjs-2.1.1',
-            u'args': [
-                '--disk-cache=false',
-                '--load-images=true',
-                '--ignore-ssl-errors=true',
-                '--ssl-protocol=any'
-            ],
-            u'env': {u'TZ': 'UTC'},
-            u'timeouts': {
-                u'initial_page_load': 15,
-                u'page_load': 5,
-                u'render_response': 5,
-                u'process_startup': 10
-            },
-        })
+    # boot renderer up
+    try:
+        renderer = PhantomJSRenderer({
+                u'executable': './bin/phantomjs-2.1.1',
+                u'args': [
+                    '--disk-cache=false',
+                    '--load-images=true',
+                    '--ignore-ssl-errors=true',
+                    '--ssl-protocol=any'
+                ],
+                u'env': {u'TZ': os.getenv('PHANTOMJS_TIME_ZONE', 'UTC')},
+                u'timeouts': {
+                    u'initial_page_load': int(os.getenv('PHANTOMJS_TIMEOUT_INITIAL', 15)),
+                    u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 5)),
+                    u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 5)),
+                    u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 10)),
+                },
+            })
 
-    page = renderer.render(url=url, html=html, img_format='PNG')
+        page = renderer.render(url=url,
+                               html=html,
+                               img_format=img_format,
+                               width=width,
+                               height=height,
+                               page_load_timeout=page_load_timeout,
+                               user_agent=user_agent,
+                               headers=headers,
+                               cookies=cookies,
+                               html_encoding=html_encoding)
+    except Exception as e:
+        return {
+            'isBase64Encoded': False,
+            'statusCode': 500,
+            'body': ujson.dumps({
+                'message': 'Uncaught Exception',
+                'ex': traceback.format_exc(),
+             }),
+            'headers': {'Content-Type': 'application/json'}
+        }
 
-    return {
-        'isBase64Encoded': False,
-        'statusCode': 200,
-        'body': ujson.dumps(page),
-        'headers': {'Content-Type': 'application/json'}
+    if page['status'] == 'fail':
+        return {
+            'isBase64Encoded': False,
+            'statusCode': 500,
+            'body': ujson.dumps(page),
+            'headers': {'Content-Type': 'application/json'}
+        }
+    else:
+        return {
+            'isBase64Encoded': False,
+            'statusCode': 200,
+            'body': ujson.dumps(page),
+            'headers': {'Content-Type': 'application/json'}
+        }
+
+if __name__ == "__main__":
+    data_to_send = {
+        'url': 'www.aol.com'
     }
+    print(render({'body': ujson.dumps(data_to_send)}, {}))

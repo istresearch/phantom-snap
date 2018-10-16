@@ -34,12 +34,14 @@ setup(name='phantom-snap',
         'nose>=1.3.7'
     ],
     install_requires=[
-        'eventlet>=0.23.0'
+        'eventlet>=0.23.0',
+        'requests==2.19.1'
     ],
     tests_require=[
         'nose',
         'coverage>=4.0.3',
-        'mock==2.0.0'
+        'mock==2.0.0',
+        'flex==6.13.2',
     ],
     test_suite='nose.collector',
     classifiers=[
