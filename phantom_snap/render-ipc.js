@@ -123,6 +123,12 @@ renderHtml = function (request) {
     }
 
     var timeout = 1000 * 180;
+    var resourceWait  = 300,
+    maxRenderWait = 10000;
+
+    var count = 0,
+    forcedRenderTimeout,
+    renderTimeout;
 
     if(request.hasOwnProperty('timeout')) {
         timeout = request.timeout;
@@ -132,6 +138,8 @@ renderHtml = function (request) {
 
     var rendered = false;
     var time = Date.now();
+
+    page.onConfirm = page.onPrompt = function noOp() {};
 
     var render = function(status) {
 
@@ -177,8 +185,21 @@ renderHtml = function (request) {
         }
     };
 
-    page.onLoadFinished = function(status) {
-        render(status);
+    // lazy load ajax to get a more clear page
+    // https://gist.github.com/cjoudrey/1341747
+    page.onResourceRequested = function (req) {
+        count += 1;
+        clearTimeout(renderTimeout);
+    };
+
+    page.onResourceReceived = function (res) {
+        if (!res.stage || res.stage === 'end') {
+            count -= 1;
+            if (count === 0) {
+                renderTimeout = setTimeout(function() {render('success')},
+                                           resourceWait);
+            }
+        }
     };
 
     if(request.hasOwnProperty('html')) {
