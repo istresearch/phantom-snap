@@ -6,10 +6,17 @@ import os
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 import traceback
+import logging
+import copy
+import sys
 
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logger = logging.getLogger('PhantomJSRenderer')
+logger.setLevel(logging.DEBUG)
 
 def render(event, context):
     request_data = ujson.loads(event['body'])
+    logger.info("Received request {}".format(request_data))
 
     schema_version = os.getenv('SCHEMA_VERSION', '1.0')
     schema_key = os.getenv('SCHEMA_KEY', 'render')
@@ -18,6 +25,7 @@ def render(event, context):
         validate(request_data,
                  SCHEMA[schema_version][schema_key])
     except ValidationError as e:
+        logger.warn("Failed schema validation {}".format(traceback.format_exc()))
         return {
             'isBase64Encoded': False,
             'statusCode': 400,
@@ -31,7 +39,7 @@ def render(event, context):
     # load data from schema with defaults
     url = request_data['url']
     html = request_data.get('html', None)
-    img_format = request_data.get('image_format', 'PNG')
+    img_format = request_data.get('img_format', 'PNG')
     width = request_data.get('width', 1280)
     height = request_data.get('height', 1024)
     page_load_timeout = request_data.get('page_load_timeout', None)
@@ -43,25 +51,24 @@ def render(event, context):
     if html is not None:
         html = base64.b64decode(html)
 
-    # boot renderer up
+    # render page
     try:
         renderer = PhantomJSRenderer({
-                u'executable': './bin/phantomjs-2.1.1',
-                u'args': [
-                    '--disk-cache=false',
-                    '--load-images=true',
-                    '--ignore-ssl-errors=true',
-                    '--ssl-protocol=any'
-                ],
-                u'env': {u'TZ': os.getenv('PHANTOMJS_TIME_ZONE', 'UTC')},
-                u'timeouts': {
-                    u'initial_page_load': int(os.getenv('PHANTOMJS_TIMEOUT_INITIAL', 15)),
-                    u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 5)),
-                    u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 5)),
-                    u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 10)),
-                },
-            })
-
+            u'executable': './bin/phantomjs-2.1.1',
+            u'args': [
+                '--disk-cache=false',
+                '--load-images=true',
+                '--ignore-ssl-errors=true',
+                '--ssl-protocol=any',
+            ],
+            u'env': {u'TZ': os.getenv('PHANTOMJS_TIME_ZONE', 'UTC')},
+            u'timeouts': {
+                u'initial_page_load': int(os.getenv('PHANTOMJS_TIMEOUT_INITIAL', 15)),
+                u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 5)),
+                u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 5)),
+                u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 10)),
+            },
+        })
         page = renderer.render(url=url,
                                html=html,
                                img_format=img_format,
@@ -72,7 +79,9 @@ def render(event, context):
                                headers=headers,
                                cookies=cookies,
                                html_encoding=html_encoding)
+        renderer.shutdown()
     except Exception as e:
+        logger.error("Uncaught exception {}".format(traceback.format_exc()))
         return {
             'isBase64Encoded': False,
             'statusCode': 500,
@@ -83,7 +92,13 @@ def render(event, context):
             'headers': {'Content-Type': 'application/json'}
         }
 
+    log_page = copy.deepcopy(page)
+    if log_page['base64'] is not None:
+        log_page['base64'] = '<omitted>'
+    logger.info("Render response {}".format(log_page))
+
     if page['status'] == 'fail':
+        logger.warn("Failed to render page")
         return {
             'isBase64Encoded': False,
             'statusCode': 500,
@@ -91,6 +106,7 @@ def render(event, context):
             'headers': {'Content-Type': 'application/json'}
         }
     else:
+        logger.debug("Successful render")
         return {
             'isBase64Encoded': False,
             'statusCode': 200,

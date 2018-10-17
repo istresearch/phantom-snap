@@ -9,6 +9,7 @@ import copy
 import logging
 from settings import PHANTOMJS, merge
 import traceback
+import time
 
 class LambdaRenderer(Renderer):
     """Offloads the rendering process to a PhantomJSRenderer
@@ -127,15 +128,24 @@ class LambdaRenderer(Renderer):
 
         # send it
         try:
+            self._logger.info("Sending lambda request {} {} {} {}".format(url, json_dict, request_headers, timeout))
+            start_time = time.time()
             result = requests.post(url=self.config['url'],
                                    json=json_dict,
                                    headers=request_headers,
                                    allow_redirects=True,
                                    timeout=timeout)
+            self._logger.info("Request took {}s".format(time.time() - start_time))
+
             # valid response should be json
             json_result = result.json()
+            json_copy = copy.deepcopy(json_result)
+            if json_copy['base64'] is not None:
+                json_copy['base64'] = '<omitted>'
+            self._logger.debug("Received data from lambda {}".format(json_copy))
         except (ValueError, ConnectionError, Timeout,
                 TooManyRedirects, RequestException) as e:
+            self._logger.error("Exception while calling lambda {}".format(traceback.format_exc()))
             return {
                 u'url': url,
                 u'status': u'fail',
@@ -148,6 +158,7 @@ class LambdaRenderer(Renderer):
 
         # handle error within lambda function
         if result.status_code != 200:
+            self._logger.warn("Received non-200 from lambda")
             response = {
                 u'url': url,
                 u'status': u'fail',
