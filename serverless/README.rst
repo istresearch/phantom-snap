@@ -46,6 +46,7 @@ To deploy or update our lambda function:
 If everything was successful, you should get the following output at the end:
 
 ::
+
     ...
 
     Service Information
