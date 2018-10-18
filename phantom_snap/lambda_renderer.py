@@ -140,7 +140,7 @@ class LambdaRenderer(Renderer):
             # valid response should be json
             json_result = result.json()
             json_copy = copy.deepcopy(json_result)
-            if json_copy['base64'] is not None:
+            if 'base64' in json_copy and json_copy['base64'] is not None:
                 json_copy['base64'] = '<omitted>'
             self._logger.debug("Received data from lambda {}".format(json_copy))
         except (ValueError, ConnectionError, Timeout,
@@ -170,7 +170,7 @@ class LambdaRenderer(Renderer):
             }
 
             if 'message' in json_result:
-                response['error'] = json_result['ex']
+                response['error'] = json_result['ex'] if 'ex' in json_result else json_result['message']
             return response
 
         return json_result

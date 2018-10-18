@@ -37,6 +37,8 @@ This project primary consists of only a couple files that enable our success.
 
 * ``requirements.txt`` - this file is a normal python requirements file that enables us to add additional packages to our lambda environment
 
+* ``bin/phantomjs-2.1.1`` - a linux 64 bit PhantomJS executable
+
 To deploy or update our lambda function:
 
 ::
@@ -63,7 +65,7 @@ If everything was successful, you should get the following output at the end:
 
     ...
 
-You will want to copy the POST endpoint, and use it in your ``LambdaRenderer`` configuration like so:
+You will want to copy the POST endpoint, and use it in your ``LambdaRenderer`` configuration like so (see `this <https://serverless.com/framework/docs/providers/aws/events/apigateway#setting-api-keys-for-your-rest-api>`_ page for more details on Serverless API keys):
 
 ::
 

@@ -200,3 +200,37 @@ class TestLambda(TestCase):
             self.assertEqual(lr.render(url='http://www.urlhere.com'),
                              res)
 
+            # AWS Internal Server Error
+            aws_error = {
+                "message": "Internal server error"
+            }
+            expected = {
+                u'status': u'fail',
+                u'format': u'PNG',
+                u'url': u'http://www.urlhere.com',
+                u'paint_time': None,
+                u'base64': None,
+                u'error': "Internal server error",
+                u'load_time': None,
+            }
+            r.return_value = ReqRes(aws_error, 500)
+            self.assertEqual(lr.render(url='http://www.urlhere.com'),
+                             expected)
+
+            # AWS Permissions error
+            aws_error = {
+                "message": "Forbidden"
+            }
+            expected = {
+                u'status': u'fail',
+                u'format': u'PNG',
+                u'url': u'http://www.urlhere.com',
+                u'paint_time': None,
+                u'base64': None,
+                u'error': "Forbidden",
+                u'load_time': None,
+            }
+            r.return_value = ReqRes(aws_error, 500)
+            self.assertEqual(lr.render(url='http://www.urlhere.com'),
+                             expected)
+
