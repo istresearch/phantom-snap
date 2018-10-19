@@ -22,6 +22,7 @@
  *     }>, [optional]
  *   "format": String, [optional]
  *   "timeout": Long [optional]
+ *   "resourceWait": Integer [optional]
  * }\n
  *
  * Output will be JSON:
@@ -134,6 +135,10 @@ renderHtml = function (request) {
         timeout = request.timeout;
     }
 
+    if(request.hasOwnProperty('resourceWait')) {
+        resourceWait = request.resourceWait;
+    }
+
     page.settings.resourceTimeout  = timeout;
 
     var rendered = false;
@@ -199,6 +204,13 @@ renderHtml = function (request) {
                 renderTimeout = setTimeout(function() {render('success')},
                                            resourceWait);
             }
+        }
+    };
+
+    // render only if we have no more resources to load
+    page.onLoadFinished = function(status) {
+        if (count == 0) {
+            render(status);
         }
     };
 

@@ -12,7 +12,8 @@ PHANTOMJS = {
         'initial_page_load': 15,  # 15 Seconds, PhantomJS takes longer on the first execution after startup
         'page_load': 5,  # Max time given for PhantomJS to load the page before 'stop' and render
         'render_response': 5,  # Additional time after page load for PhantomJS to formulate and return response
-        'process_startup': 10  # Max time for PhantomJS process to start before giving up
+        'process_startup': 10, # Max time for PhantomJS process to start before giving up
+        'resource_wait_ms': 300 # Max time to wait for final resources to load, in ms
     }
 }
 

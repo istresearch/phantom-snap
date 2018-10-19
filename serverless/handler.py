@@ -28,6 +28,7 @@ renderer = PhantomJSRenderer({
         u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 5)),
         u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 5)),
         u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 10)),
+        u'resource_wait_ms': int(os.getenv('PHANTOMJS_RESOURCE_WAIT_MS', 300)),
     },
 })
 
