@@ -124,12 +124,11 @@ renderHtml = function (request) {
     }
 
     var timeout = 1000 * 180;
-    var resourceWait  = 300,
-    maxRenderWait = 10000;
+    var resourceWait  = 300;
 
-    var count = 0,
-    forcedRenderTimeout,
-    renderTimeout;
+    var count = 0;
+    var renderTimeout;
+    var stoppedRenderTimeout;
 
     if(request.hasOwnProperty('timeout')) {
         timeout = request.timeout;
@@ -150,6 +149,8 @@ renderHtml = function (request) {
 
         if(!rendered) {
             rendered = true;
+            clearTimeout(renderTimeout);
+            clearTimeout(stoppedRenderTimeout);
 
             page.stop();
 
@@ -224,7 +225,7 @@ renderHtml = function (request) {
         page.open(request.url);
     }
 
-    setTimeout(function() {
+    stoppedRenderTimeout = setTimeout(function() {
         render("stopped");
     }, timeout);
 };
