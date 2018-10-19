@@ -16,6 +16,14 @@ PHANTOMJS = {
     }
 }
 
+# Defaults for the Lambda Renderer
+LAMBDA = {
+    'url': 'http://localhost',
+    'timeouts': {
+        'request_timeout': 120,  # Max time for the endpoint to finish the page render and return the results
+    }
+}
+
 # Defaults for the Lifetime decorator
 LIFETIME = {
     'idle_shutdown_sec': 1800,  # 30 minutes, Shutdown PhantomJS if it's been idle this long
@@ -26,11 +34,11 @@ LIFETIME = {
 def merge(a, b, path=None):
     """
     Recursively merges b into a, overwriting existing a values.
-    :param a: 
+    :param a:
     :type a: dict
-    :param b: 
+    :param b:
     :type b: dict
-    :param path: 
+    :param path:
     :return: a
     """
     if path is None: path = []

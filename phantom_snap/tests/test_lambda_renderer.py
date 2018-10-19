@@ -6,11 +6,6 @@ import copy
 
 
 class TestLambda(TestCase):
-    maxDiff = None
-
-    def test_init(self):
-        with self.assertRaises(NameError) as e:
-            lf = LambdaRenderer({})
 
     def test_is_base64(self):
         lr = LambdaRenderer({'url': 'my-url'})
@@ -113,7 +108,7 @@ class TestLambda(TestCase):
     def test_prep_timeout(self):
         # default
         lr = LambdaRenderer({'url': 'my-url'})
-        expected = None
+        expected = 120
         self.assertEqual(lr._prep_timeout(), expected)
 
         # with config

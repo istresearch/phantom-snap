@@ -7,7 +7,7 @@ from requests.exceptions import RequestException, \
 import base64
 import copy
 import logging
-from settings import PHANTOMJS, merge
+from settings import LAMBDA, merge
 import traceback
 import time
 
@@ -18,16 +18,13 @@ class LambdaRenderer(Renderer):
 
     def __init__(self, config, logger=None):
 
-        self.config = copy.deepcopy(PHANTOMJS)
+        self.config = copy.deepcopy(LAMBDA)
         self.config = merge(self.config, config)
 
         if logger is not None:
             self._logger = logger
         else:
             self._logger = logging.getLogger(u'LambdaRenderer')
-
-        if 'url' not in self.config:
-            raise NameError("'url' not defined in config")
 
     def get_config(self):
         """ Return the configuration dictionary.
@@ -89,11 +86,7 @@ class LambdaRenderer(Renderer):
 
     def _prep_timeout(self):
         """Preps the request timeout to lambda"""
-        if 'timeouts' in self.config and \
-                'request_timeout' in self.config['timeouts']:
-            return self.config['timeouts']['request_timeout']
-        else:
-            return None
+        return self.config['timeouts']['request_timeout']
 
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024,
                page_load_timeout=None, user_agent=None,
@@ -158,7 +151,7 @@ class LambdaRenderer(Renderer):
 
         # handle error within lambda function
         if result.status_code != 200:
-            self._logger.warn("Received non-200 from lambda")
+            self._logger.warn("Received unexpected {} status code from lambda".format(result.status_code))
             response = {
                 u'url': url,
                 u'status': u'fail',
