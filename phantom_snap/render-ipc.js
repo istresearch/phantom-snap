@@ -22,6 +22,7 @@
  *     }>, [optional]
  *   "format": String, [optional]
  *   "timeout": Long [optional]
+ *   "resourceWait": Integer [optional]
  * }\n
  *
  * Output will be JSON:
@@ -123,9 +124,18 @@ renderHtml = function (request) {
     }
 
     var timeout = 1000 * 180;
+    var resourceWait  = 300;
+
+    var count = 0;
+    var renderTimeout;
+    var stoppedRenderTimeout;
 
     if(request.hasOwnProperty('timeout')) {
         timeout = request.timeout;
+    }
+
+    if(request.hasOwnProperty('resourceWait')) {
+        resourceWait = request.resourceWait;
     }
 
     page.settings.resourceTimeout  = timeout;
@@ -133,10 +143,14 @@ renderHtml = function (request) {
     var rendered = false;
     var time = Date.now();
 
+    page.onConfirm = page.onPrompt = function noOp() {};
+
     var render = function(status) {
 
         if(!rendered) {
             rendered = true;
+            clearTimeout(renderTimeout);
+            clearTimeout(stoppedRenderTimeout);
 
             page.stop();
 
@@ -177,8 +191,28 @@ renderHtml = function (request) {
         }
     };
 
+    // lazy load ajax to get a more clear page
+    // https://gist.github.com/cjoudrey/1341747
+    page.onResourceRequested = function (req) {
+        count += 1;
+        clearTimeout(renderTimeout);
+    };
+
+    page.onResourceReceived = function (res) {
+        if (!res.stage || res.stage === 'end') {
+            count -= 1;
+            if (count === 0) {
+                renderTimeout = setTimeout(function() {render('success')},
+                                           resourceWait);
+            }
+        }
+    };
+
+    // render only if we have no more resources to load
     page.onLoadFinished = function(status) {
-        render(status);
+        if (count == 0) {
+            render(status);
+        }
     };
 
     if(request.hasOwnProperty('html')) {
@@ -191,7 +225,7 @@ renderHtml = function (request) {
         page.open(request.url);
     }
 
-    setTimeout(function() {
+    stoppedRenderTimeout = setTimeout(function() {
         render("stopped");
     }, timeout);
 };

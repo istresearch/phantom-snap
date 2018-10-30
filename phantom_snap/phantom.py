@@ -122,6 +122,7 @@ class PhantomJSRenderer(renderer.Renderer):
                         page_load_timeout = self.config[u'timeouts'][u'page_load']
 
                 request[u'timeout'] = page_load_timeout * 1000  # Convert seconds to ms
+                request[u'resourceWait'] = self.config[u'timeouts'][u'resource_wait_ms']
 
                 request_string = json.dumps(request)
 
