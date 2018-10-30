@@ -12,7 +12,16 @@ PHANTOMJS = {
         'initial_page_load': 15,  # 15 Seconds, PhantomJS takes longer on the first execution after startup
         'page_load': 5,  # Max time given for PhantomJS to load the page before 'stop' and render
         'render_response': 5,  # Additional time after page load for PhantomJS to formulate and return response
-        'process_startup': 10  # Max time for PhantomJS process to start before giving up
+        'process_startup': 10, # Max time for PhantomJS process to start before giving up
+        'resource_wait_ms': 300 # Max time to wait for final resources to load, in ms
+    }
+}
+
+# Defaults for the Lambda Renderer
+LAMBDA = {
+    'url': 'http://localhost',
+    'timeouts': {
+        'request_timeout': 120,  # Max time for the endpoint to finish the page render and return the results
     }
 }
 
@@ -26,11 +35,11 @@ LIFETIME = {
 def merge(a, b, path=None):
     """
     Recursively merges b into a, overwriting existing a values.
-    :param a: 
+    :param a:
     :type a: dict
-    :param b: 
+    :param b:
     :type b: dict
-    :param path: 
+    :param path:
     :return: a
     """
     if path is None: path = []

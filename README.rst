@@ -28,7 +28,7 @@ This first example demonstrates rendering a URL and saving the resulting image t
     from phantom_snap.settings import PHANTOMJS
     from phantom_snap.phantom import PhantomJSRenderer
     from phantom_snap.imagetools import save_image
-    
+
     config = {
         'executable': '/usr/local/bin/phantomjs',
         'args': PHANTOMJS['args'] + ['--disk-cache=false', '--load-images=true'],
@@ -83,13 +83,34 @@ This example shows how to provide HTML content directly to the rendering process
     finally:
         r.shutdown(15)
 
+If you would like to offload the running of phantomjs into `AWS Lambda <https://aws.amazon.com/lambda/>`_, you can use the ``LambdaRenderer`` class in the following way:
+
+::
+
+    from phantom_snap.lambda_renderer import LambdaRenderer
+    from phantom_snap.imagetools import save_image
+
+    config = {
+        'url': 'http://url-to-my-lambda-func',
+    }
+
+    r = LambdaRenderer(config)
+    url = 'http://www.youtube.com'
+
+    page = r.render(url, img_format='JPEG')
+    save_image('/tmp/youtube-render', page)
+
+    r.shutdown()
+
+To learn more about offloading renders into AWS Lambda, please see the ``serverless`` folder.
+
 
 Decorators
 ----------
 
 **Lifetime**
 
-If you plan on running a ``PhantomJSRenderer`` instance for an extended period of time with high volume, it's recommended that you wrap the instance with a ``Lifetime`` decorator as shown below. 
+If you plan on running a ``PhantomJSRenderer`` instance for an extended period of time with high volume, it's recommended that you wrap the instance with a ``Lifetime`` decorator as shown below.
 
 The ``Lifetime`` decorator will transparently shutdown the underlying PhantomJS process if the renderer is idle or after a maximum lifetime to release any accumulated resources. This is important if PhantomJS is configured to use a memory-based browser cache to prevent the cache from growing too large. After the ``Lifetime`` decorator shuts down the Renderer (due to idle time or maximum time) the next render request will automatically create a new PhantomJS process.
 
