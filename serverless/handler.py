@@ -14,24 +14,6 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger('PhantomJSRenderer')
 logger.setLevel(logging.DEBUG)
 
-renderer = PhantomJSRenderer({
-    u'executable': './bin/phantomjs-2.1.1',
-    u'args': [
-        '--disk-cache=false',
-        '--load-images=true',
-        '--ignore-ssl-errors=true',
-        '--ssl-protocol=any',
-    ],
-    u'env': {u'TZ': os.getenv('PHANTOMJS_TIME_ZONE', 'UTC')},
-    u'timeouts': {
-        u'initial_page_load': int(os.getenv('PHANTOMJS_TIMEOUT_INITIAL', 15)),
-        u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 5)),
-        u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 5)),
-        u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 10)),
-        u'resource_wait_ms': int(os.getenv('PHANTOMJS_RESOURCE_WAIT_MS', 300)),
-    },
-})
-
 def render(event, context):
     request_data = ujson.loads(event['body'])
     logger.info("Received request {}".format(request_data))
@@ -71,6 +53,25 @@ def render(event, context):
 
     # render page
     try:
+        renderer = PhantomJSRenderer({
+            u'executable': './bin/phantomjs-2.1.1',
+            u'args': [
+                '--disk-cache=true',
+                '--max-disk-cache-size=50000',
+                '--disk-cache-path=/tmp/',
+                '--load-images=true',
+                '--ignore-ssl-errors=true',
+                '--ssl-protocol=any',
+            ],
+            u'env': {u'TZ': os.getenv('PHANTOMJS_TIME_ZONE', 'UTC')},
+            u'timeouts': {
+                u'initial_page_load': int(os.getenv('PHANTOMJS_TIMEOUT_INITIAL', 20)),
+                u'page_load': int(os.getenv('PHANTONJS_TIMEOUT_PAGE_LOAD', 15)),
+                u'render_response': int(os.getenv('PHANTOMJS_TIMEOUT_RENDER_RESPONSE', 15)),
+                u'process_startup': int(os.getenv('PHANTOMJS_TIMEOUT_STARTUP', 20)),
+                u'resource_wait_ms': int(os.getenv('PHANTOMJS_RESOURCE_WAIT_MS', 300)),
+            },
+        })
         page = renderer.render(url=url,
                                html=html,
                                img_format=img_format,
@@ -81,6 +82,7 @@ def render(event, context):
                                headers=headers,
                                cookies=cookies,
                                html_encoding=html_encoding)
+        renderer.shutdown()
     except Exception as e:
         logger.error("Uncaught exception {}".format(traceback.format_exc()))
         return {
