@@ -83,6 +83,7 @@ def render(event, context):
                                cookies=cookies,
                                html_encoding=html_encoding)
         renderer.shutdown()
+        del renderer
     except Exception as e:
         logger.error("Uncaught exception {}".format(traceback.format_exc()))
         return {
