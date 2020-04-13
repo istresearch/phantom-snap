@@ -14,6 +14,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging.getLogger('PhantomJSRenderer')
 logger.setLevel(logging.DEBUG)
 
+
 def render(event, context):
     request_data = ujson.loads(event['body'])
     logger.info("Received request {}".format(request_data))
@@ -25,7 +26,7 @@ def render(event, context):
         validate(request_data,
                  SCHEMA[schema_version][schema_key])
     except ValidationError as e:
-        logger.warn("Failed schema validation {}".format(traceback.format_exc()))
+        logger.warning("Failed schema validation {}".format(traceback.format_exc()))
         return {
             'isBase64Encoded': False,
             'statusCode': 400,
@@ -102,7 +103,7 @@ def render(event, context):
     logger.info("Render response {}".format(log_page))
 
     if page['status'] == 'fail':
-        logger.warn("Failed to render page")
+        logger.warning("Failed to render page")
         return {
             'isBase64Encoded': False,
             'statusCode': 500,

@@ -1,12 +1,13 @@
 
 phantom-snap
-====
+============
 
 Render HTML to an image using PhantomJS with this library designed to scale for high volume continuous operation.
 
 Features
 --------
 
+-  Targeting Python 3.7+
 -  Provides full timing control around the rendering process.
 -  Maintains a live PhantomJS process (instead of a new one per request which many wrappers do, which is slow).
 -  Render content from a URL, or provide the HTML content directly to the renderer

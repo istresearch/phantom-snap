@@ -10,6 +10,7 @@ from phantom_snap.decorators import Lifetime
 
 from phantom_snap.imagetools import save_image
 
+
 class TestPhantomJS(TestCase):
 
     pass
@@ -35,9 +36,8 @@ if __name__ == '__main__':
     r = PhantomJSRenderer(config)
     r = Lifetime(r)
 
-    with open('/tmp/crawl.html', 'r') as content_file:
+    with open('/tmp/crawl.html', 'r', encoding='utf-8', errors='replace') as content_file:
         html = content_file.read()
-        html = html.decode('utf-8', errors='replace')
 
     urls = [('http://www.some-domain.com', html)]
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
                 html = url[1]
                 url = url[0]
 
-            print "Requesting {}".format(url)
+            print("Requesting {}".format(url))
             page = r.render(url=url, html=html, img_format='PNG')
             save_image('/tmp/render', page)
 
@@ -56,12 +56,12 @@ if __name__ == '__main__':
             if page and 'base64' in page:
                 del page['base64']
 
-            print json.dumps(page, indent=4)
+            print(json.dumps(page, indent=4))
 
             if page is not None:
                 if page['error'] is None:
-                    print ''.join([page['url'], ' ', str(page['status']), ' ', str(page['load_time'])])
+                    print(''.join([page['url'], ' ', str(page['status']), ' ', str(page['load_time'])]))
                 else:
-                    print ''.join([page['url'], ' ', str(page['status']), ' ', page['error']])
+                    print(''.join([page['url'], ' ', str(page['status']), ' ', page['error']]))
     finally:
         r.shutdown(10)

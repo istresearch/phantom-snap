@@ -1,3 +1,3 @@
-phantom-snap==0.0.18
+phantom-snap==0.0.19
 ujson==1.35
 jsonschema==2.6.0
