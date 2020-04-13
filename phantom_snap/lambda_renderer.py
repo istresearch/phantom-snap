@@ -1,4 +1,4 @@
-from renderer import Renderer
+from .renderer import Renderer
 import requests
 from requests.exceptions import RequestException, \
                                 ConnectionError, \
@@ -7,7 +7,7 @@ from requests.exceptions import RequestException, \
 import base64
 import copy
 import logging
-from settings import LAMBDA, merge
+from .settings import LAMBDA, merge
 import traceback
 import time
 
@@ -34,7 +34,12 @@ class LambdaRenderer(Renderer):
 
     def is_base64(self, the_string):
         try:
-            return base64.b64encode(base64.b64decode(the_string)) == the_string
+            byte_data = the_string
+
+            if isinstance(the_string, str):
+                byte_data = the_string.encode('utf-8', errors='ignore')
+
+            return base64.b64encode(base64.b64decode(byte_data)) == byte_data
         except Exception:
             return False
 
@@ -56,7 +61,7 @@ class LambdaRenderer(Renderer):
             if self.is_base64(html):
                 json_dict['html'] = html
             else:
-                json_dict['html'] = base64.b64encode(html)
+                json_dict['html'] = base64.b64encode(html.encode(html_encoding, errors='ignore')).decode('utf-8')
 
         if page_load_timeout is not None:
             json_dict['page_load_timeout'] = page_load_timeout
@@ -151,7 +156,7 @@ class LambdaRenderer(Renderer):
 
         # handle error within lambda function
         if result.status_code != 200:
-            self._logger.warn("Received unexpected {} status code from lambda".format(result.status_code))
+            self._logger.warning("Received unexpected {} status code from lambda".format(result.status_code))
             response = {
                 u'url': url,
                 u'status': u'fail',

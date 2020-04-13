@@ -14,7 +14,7 @@ def save_image(filename, render_response):
        render_response[u'base64'] is not None:
 
         image_base64 = render_response[u'base64']
-        image_bytes = base64.decodestring(image_base64)
+        image_bytes = base64.decodebytes(image_base64)
 
         image_format = render_response[u'format']
 
