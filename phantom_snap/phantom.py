@@ -75,7 +75,7 @@ class PhantomJSRenderer(Renderer):
             if isinstance(html, str):
                 html = html.encode(html_encoding, errors='replace')
 
-            b64 = base64.b64encode(html)
+            b64 = base64.b64encode(html).decode('utf-8')
             request[u'html64'] = b64
 
         if user_agent is not None:
@@ -128,7 +128,7 @@ class PhantomJSRenderer(Renderer):
                     with Timeout(page_load_timeout + render_timeout):
 
                         self._logger.debug(u'Sending request: ' + request_string)
-                        self._proc.stdin.write(request_string + '\n')
+                        self._proc.stdin.write(request_string.encode('utf-8', errors='replace') + b'\n')
                         self._proc.stdin.flush()
 
                         response_string = self._proc.stdout.readline()
@@ -156,7 +156,7 @@ class PhantomJSRenderer(Renderer):
                     response[u'error'] = u'Render request has timed out.'
                 else:
                     try:
-                        phantom_response = json.loads(response_string)
+                        phantom_response = json.loads(response_string.decode('utf-8', errors='replace'))
 
                         if self._logger.isEnabledFor(logging.DEBUG):
                             msg = {}

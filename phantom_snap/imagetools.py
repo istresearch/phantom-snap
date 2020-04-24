@@ -14,7 +14,7 @@ def save_image(filename, render_response):
        render_response[u'base64'] is not None:
 
         image_base64 = render_response[u'base64']
-        image_bytes = base64.decodebytes(image_base64)
+        image_bytes = base64.decodebytes(image_base64.encode('utf-8', errors='replace'))
 
         image_format = render_response[u'format']
 
@@ -26,7 +26,7 @@ def save_image(filename, render_response):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        with open(file_path, 'w') as file_stream:
+        with open(file_path, 'wb') as file_stream:
             file_stream.write(image_bytes)
 
         return True
