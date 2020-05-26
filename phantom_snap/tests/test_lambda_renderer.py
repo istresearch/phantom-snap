@@ -116,7 +116,6 @@ class TestLambda(TestCase):
         expected = 20
         self.assertEqual(lr._prep_timeout(), expected)
 
-
     def test_render(self):
         lr = LambdaRenderer({'url': 'my-url'})
 

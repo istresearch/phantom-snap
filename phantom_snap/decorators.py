@@ -6,8 +6,8 @@ import copy
 import logging
 import time
 
-from renderer import Renderer
-from settings import LIFETIME
+from .renderer import Renderer
+from .settings import LIFETIME
 
 
 class Lifetime(Renderer):

@@ -11,15 +11,14 @@ import json
 import os
 import base64
 import traceback
-import time
-import renderer
+from .renderer import Renderer, RenderError
 import logging
 
 from signal import *
-from settings import PHANTOMJS, merge
+from .settings import PHANTOMJS, merge
 
 
-class PhantomJSRenderer(renderer.Renderer):
+class PhantomJSRenderer(Renderer):
     """
     Render a web page to an image, using either a URL or raw HTML.
 
@@ -37,10 +36,10 @@ class PhantomJSRenderer(renderer.Renderer):
         self._shutdown_lock = threading.RLock()
 
         if not self._which(self.config[u'executable']):
-            raise renderer.RenderError(''.join([u"Can't locate PhantomJS executable: ", self.config[u'executable']]))
+            raise RenderError(''.join([u"Can't locate PhantomJS executable: ", self.config[u'executable']]))
 
         if not os.path.isfile(self.config[u'script']):
-            raise renderer.RenderError(''.join([u"Can't locate script: ", self.config[u'script']]))
+            raise RenderError(''.join([u"Can't locate script: ", self.config[u'script']]))
 
         if logger is not None:
             self._logger = logger
@@ -70,14 +69,13 @@ class PhantomJSRenderer(renderer.Renderer):
         :param html_encoding:
         :return:
         """
-
         request = {u'url': url, u'width': width, u'height': height, u'format': img_format}
 
         if html is not None:
-            if isinstance(html, unicode):
+            if isinstance(html, str):
                 html = html.encode(html_encoding, errors='replace')
 
-            b64 = base64.b64encode(html)
+            b64 = base64.b64encode(html).decode('utf-8')
             request[u'html64'] = b64
 
         if user_agent is not None:
@@ -130,14 +128,14 @@ class PhantomJSRenderer(renderer.Renderer):
                     with Timeout(page_load_timeout + render_timeout):
 
                         self._logger.debug(u'Sending request: ' + request_string)
-                        self._proc.stdin.write(request_string + '\n')
+                        self._proc.stdin.write(request_string.encode('utf-8', errors='replace') + b'\n')
                         self._proc.stdin.flush()
 
                         response_string = self._proc.stdout.readline()
 
                 except Timeout:
                     response_string = None
-                    self._logger.warn(u'Received no response, terminating PhantomJS.')
+                    self._logger.warning(u'Received no response, terminating PhantomJS.')
                     self.shutdown()
 
                 err_messages = self._check_stderr()
@@ -158,7 +156,7 @@ class PhantomJSRenderer(renderer.Renderer):
                     response[u'error'] = u'Render request has timed out.'
                 else:
                     try:
-                        phantom_response = json.loads(response_string)
+                        phantom_response = json.loads(response_string.decode('utf-8', errors='replace'))
 
                         if self._logger.isEnabledFor(logging.DEBUG):
                             msg = {}
