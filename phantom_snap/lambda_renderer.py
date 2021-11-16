@@ -44,7 +44,7 @@ class LambdaRenderer(Renderer):
             return False
 
     def _prep_json(self, url, html, img_format, width, height, page_load_timeout,
-                   user_agent, headers, cookies, html_encoding):
+                   user_agent, headers, cookies, html_encoding, http_proxy):
         """Preps the json value to be passed to the request"""
         json_dict = {
         # non-None args
@@ -52,7 +52,7 @@ class LambdaRenderer(Renderer):
             'img_format': img_format,
             'width': width,
             'height': height,
-            'html_encoding': html_encoding,
+            'html_encoding': html_encoding
         }
 
         # args that can be None
@@ -68,6 +68,9 @@ class LambdaRenderer(Renderer):
 
         if user_agent is not None:
             json_dict['user_agent'] = user_agent
+
+        if http_proxy is not None:
+            json_dict['http_proxy'] = http_proxy
 
         if headers is not None:
             json_dict['headers'] = headers
@@ -95,7 +98,7 @@ class LambdaRenderer(Renderer):
 
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024,
                page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None, html_encoding=u'utf-8'):
+               headers=None, cookies=None, html_encoding=u'utf-8', http_proxy=None):
         """
         Render a URL target or HTML to an image file.
         :param url:
@@ -120,7 +123,8 @@ class LambdaRenderer(Renderer):
                                     user_agent=user_agent,
                                     headers=headers,
                                     cookies=cookies,
-                                    html_encoding=html_encoding)
+                                    html_encoding=html_encoding,
+                                    http_proxy=http_proxy)
         request_headers = self._prep_headers()
         timeout = self._prep_timeout()
 

@@ -11,9 +11,9 @@ from phantom_snap.decorators import Lifetime
 from phantom_snap.imagetools import save_image
 
 
-class TestPhantomJS(TestCase):
-
-    pass
+# class TestPhantomJS(TestCase):
+#
+#     pass
 
 
 if __name__ == '__main__':
@@ -36,10 +36,15 @@ if __name__ == '__main__':
     r = PhantomJSRenderer(config)
     r = Lifetime(r)
 
-    with open('/tmp/crawl.html', 'r', encoding='utf-8', errors='replace') as content_file:
-        html = content_file.read()
+    # with open('/tmp/crawl.html', 'r', encoding='utf-8', errors='replace') as content_file:
+    #     html = content_file.read()
 
-    urls = [('http://www.some-domain.com', html)]
+    urls = [
+        'http://ip.changeip.com'
+        # ('http://www.some-domain.com', html),
+    ]
+
+    http_proxy = 'http://user:pass@ip:port'
 
     try:
         for url in urls:
@@ -49,7 +54,7 @@ if __name__ == '__main__':
                 url = url[0]
 
             print("Requesting {}".format(url))
-            page = r.render(url=url, html=html, img_format='PNG')
+            page = r.render(url=url, html=html, img_format='PNG', http_proxy=http_proxy)
             save_image('/tmp/render', page)
 
             import json

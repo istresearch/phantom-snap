@@ -10,6 +10,7 @@
  *   "width": Integer, [optional]
  *   "height": Integer, [optional]
  *   "userAgent": String, [optional]
+ *   "httpProxy": String, [optional]
  *   "headers": Map<String, String>, [optional]
  *   "cookies": List<{
  *       'name'     : String, [required]
@@ -98,6 +99,22 @@ renderHtml = function (request) {
 
     if (request.hasOwnProperty('headers')) {
         page.customHeaders = request.headers;
+    }
+
+    if (request.hasOwnProperty('httpProxy')) {
+
+        // Undocumented API for proxy:
+        //
+        // Global:
+        // phantom.setProxy(host_or_IP, port, proxy_type, user_name, password);
+        // host_or_IP only this argument is required others are optional
+        // port is numeric value by default 80
+        // proxy_type can be http (default) or socks5
+        //
+        // Per page:
+        // page.setProxy("http://user:pass@proxy_ip_or_host:port/");
+
+        page.setProxy(request.httpProxy);
     }
 
     phantom.clearCookies();
