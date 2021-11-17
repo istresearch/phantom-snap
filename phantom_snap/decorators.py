@@ -47,7 +47,7 @@ class Lifetime(Renderer):
         return self.config
 
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None, html_encoding=u'utf-8'):
+               headers=None, cookies=None, html_encoding=u'utf-8', http_proxy=None):
 
         with self._lock:
             self._last_render_time = time.time()
@@ -58,7 +58,7 @@ class Lifetime(Renderer):
             if not self._running:
                 self._startup()
 
-            return self._delegate.render(url, html, img_format, width, height, page_load_timeout, user_agent, headers, cookies, html_encoding)
+            return self._delegate.render(url, html, img_format, width, height, page_load_timeout, user_agent, headers, cookies, html_encoding, http_proxy)
 
     def _startup(self):
 

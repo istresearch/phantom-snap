@@ -45,6 +45,7 @@ def render(event, context):
     height = request_data.get('height', 1024)
     page_load_timeout = request_data.get('page_load_timeout', None)
     user_agent = request_data.get('user_agent', None)
+    http_proxy = request_data.get('http_proxy', None)
     headers = request_data.get('headers', None)
     cookies = request_data.get('cookies', None)
     html_encoding = request_data.get('html_encoding', 'utf-8')
@@ -82,7 +83,8 @@ def render(event, context):
                                user_agent=user_agent,
                                headers=headers,
                                cookies=cookies,
-                               html_encoding=html_encoding)
+                               html_encoding=html_encoding,
+                               http_proxy=http_proxy)
         renderer.shutdown()
         del renderer
     except Exception as e:

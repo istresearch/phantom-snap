@@ -54,7 +54,7 @@ class PhantomJSRenderer(Renderer):
         return self.config
 
     def render(self, url, html=None, img_format=u'PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None, html_encoding=u'utf-8'):
+               headers=None, cookies=None, html_encoding=u'utf-8', http_proxy=None):
         """
         Render a URL target or HTML to an image file.
         :param url:
@@ -80,6 +80,9 @@ class PhantomJSRenderer(Renderer):
 
         if user_agent is not None:
             request[u'userAgent'] = user_agent
+
+        if http_proxy is not None:
+            request[u'httpProxy'] = http_proxy
 
         if headers is not None:
             request[u'headers'] = headers

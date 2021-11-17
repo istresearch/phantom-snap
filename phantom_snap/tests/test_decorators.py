@@ -22,7 +22,7 @@ class MockRenderer(Renderer):
         return self.config
 
     def render(self, url, html=None, img_format='PNG', width=1280, height=1024, page_load_timeout=None, user_agent=None,
-               headers=None, cookies=None, html_encoding=u'utf-8'):
+               headers=None, cookies=None, html_encoding=u'utf-8', http_proxy=None):
         pass
 
     def shutdown(self, timeout=None):

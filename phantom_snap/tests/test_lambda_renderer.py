@@ -39,7 +39,8 @@ class TestLambda(TestCase):
                                        user_agent=None,
                                        headers=None,
                                        cookies=None,
-                                       html_encoding=u'utf-8'), expected)
+                                       html_encoding=u'utf-8',
+                                       http_proxy=None), expected)
 
         # test all additional params, not encoded html
         expected = {
@@ -63,7 +64,8 @@ class TestLambda(TestCase):
                                        user_agent='Mozilla',
                                        headers={'key': 'value'},
                                        cookies={'value': 'key'},
-                                       html_encoding=u'utf-8'), expected)
+                                       html_encoding=u'utf-8',
+                                       http_proxy=None), expected)
 
         # test all additional params, encoded html
         expected = {
@@ -87,7 +89,8 @@ class TestLambda(TestCase):
                                        user_agent='Mozilla',
                                        headers={'key': 'value'},
                                        cookies={'value': 'key'},
-                                       html_encoding=u'utf-8'), expected)
+                                       html_encoding=u'utf-8',
+                                       http_proxy=None), expected)
 
     def test_prep_headers(self):
         # default
