@@ -62,6 +62,7 @@ workflows:
       - deploy:
           requires:
             - build
+          context: globalconfig
           filters:
             tags:
               only: /^v.*/
