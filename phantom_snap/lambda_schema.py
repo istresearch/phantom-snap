@@ -44,6 +44,11 @@ SCHEMA = {
                     "type": "string",
                     "minLength": 1
                 },
+                "http_proxy": {
+                    # default None
+                    "type": "string",
+                    "minLength": 1
+                },
                 "headers": {
                     # default None
                     "type": "object"
