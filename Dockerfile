@@ -22,12 +22,15 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# Install PhantomJS
+# Install PhantomJS from web
 RUN mkdir /tmp/phantomjs \
  && curl -Ls https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PHANTOM_JS_VERSION}.tar.bz2 \
         | tar -xj --strip-components=1 -C /tmp/phantomjs \
  && mv /tmp/phantomjs/bin/phantomjs ${PHANTOMJS_EXE} \
  && rm -r /tmp/phantomjs
+
+# Install PhantomJS from phantom-snap
+#COPY serverless/bin/phantomjs-2.1.1 ${PHANTOMJS_EXE}
 
 # Add PhantomJS to the path
 ENV PATH="${PHANTOMJS_EXE}:${PATH}"
