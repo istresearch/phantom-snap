@@ -5,6 +5,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    image: phantom-snap:latest
     env_file:
       - ./docker/.env
     ports:
