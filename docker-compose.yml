@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  phantom-snap:
+    container_name: phantom-snap
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: phantom-snap:latest
+    env_file:
+      - ./docker/.env
+    ports:
+      - "8080:8080"
+
+
