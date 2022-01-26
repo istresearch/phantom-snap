@@ -1,3 +1,4 @@
+#handler.py
 from phantom_snap.phantom import PhantomJSRenderer
 from phantom_snap.lambda_schema import SCHEMA
 import base64

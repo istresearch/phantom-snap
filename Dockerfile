@@ -47,7 +47,7 @@ COPY phantom_snap /phantom_snap
 COPY docker/openssl.cnf /etc/ssl/openssl.cnf
 
 # Install runtime files
-COPY docker/main.py /
-COPY docker/render.py /
+COPY docker/entrypoint.py /
+COPY docker/handler.py /
 
-ENTRYPOINT ["uvicorn","--host","0.0.0.0","--port","8080","main:app"]
+ENTRYPOINT ["uvicorn","--host","0.0.0.0","--port","8080","entrypoint:app"]
