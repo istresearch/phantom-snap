@@ -25,6 +25,14 @@ LAMBDA = {
     }
 }
 
+# Defaults for the Cortex Renderer, assuming docker container running at port 8080
+CORTEX = {
+    'url': 'http://localhost:8080',
+    'timeouts': {
+        'request_timeout': 120,  # Max time for the endpoint to finish the page render and return the results
+    }
+}
+
 # Defaults for the Lifetime decorator
 LIFETIME = {
     'idle_shutdown_sec': 1800,  # 30 minutes, Shutdown PhantomJS if it's been idle this long

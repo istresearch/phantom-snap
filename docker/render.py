@@ -52,7 +52,7 @@ class PageRenderer:
         }))
 
     def render(self, event, context=None):
-        # request_data = ujson.loads(event['body'])
+        #request_data = ujson.loads(event['body'])
         request_data = event['body']
         logger.info("Received request {}".format(request_data))
 
